@@ -21,35 +21,26 @@
         </div>
       </div>
     </header>
-
-    <!-- Collapsible settings preview tray -->
     <section class="preview-tray" id="previewTray">
       <div class="preview-grid">
         <div class="status-pill">Obstacles: <span id="obsNames">—</span> <button id="editObs" class="link">Edit</button></div>
         <div class="status-pill">Stances: <span id="stanceNames">—</span> <button id="editStance" class="link">Edit</button></div>
         <div class="status-pill">Tricks: <span id="trickSummary">—</span> <button id="editTricks" class="link">Edit</button></div>
       </div>
-      <button id="collapsePreview" class="collapse-btn" aria-expanded="true" aria-label="Collapse settings preview">⌄</button>
+      <button id="collapsePreview" class="collapse-btn" aria-expanded="true" aria-label="Collapse settings preview">▲</button>
     </section>
-
     <main id="screen">
-      <!-- Sheet -->
       <section class="card sheet" id="sheet">
-        <!-- Sheet header -->
         <div class="sheet-header">
           <div id="letters" class="letters-sheet" aria-hidden="false">
             <span>S</span><span>K</span><span>A</span><span>T</span><span>E</span>
           </div>
           <div class="total-score">Total Score: <span id="scoreTop">0.00</span></div>
         </div>
-
-        <!-- View: Setup -->
         <div id="viewSetup" class="view active">
           <div class="hero-emoji" aria-hidden="true">🧠 🔒 🛹</div>
-          <button id="startBtn" class="primary xl full start-cta">Start Session</button>
+          <button id="startBtn" class="primary xl full start-cta outer-pad">Start Session</button>
         </div>
-
-        <!-- View: Game -->
         <div id="viewGame" class="view hidden" aria-live="polite">
           <div id="trick" class="trick bigtitle">
             <div class="trick-topline">
@@ -58,39 +49,31 @@
             </div>
             <div id="trickText">—</div>
           </div>
-
-          <div class="actions right">
+          <div class="actions right outer-pad">
             <button id="skipBtn" class="ghost xl">Skip</button>
             <button id="missBtn" class="danger xl">Miss</button>
             <button id="landBtn" class="success xl">Land</button>
             <button id="nextBtn" class="primary xl hidden">Next</button>
           </div>
-
           <details id="breakdown" class="breakdown">
             <summary>Breakdown</summary>
             <pre id="breakText"></pre>
           </details>
-
-          <div class="sheet-actions">
+          <div class="sheet-actions outer-pad">
             <button id="endBtn" class="ghost lg">End Session</button>
           </div>
         </div>
-
-        <!-- View: Over -->
         <div id="viewOver" class="view hidden">
           <div class="hero-emoji" aria-hidden="true">🧠 🔒 🛹</div>
           <h2>Session Over</h2>
           <div class="big">Final: <span id="finalScore">0.00</span></div>
           <div>Best: <span id="bestScore">0.00</span></div>
-          <button id="restartBtn" class="primary xl full">New Session</button>
+          <button id="restartBtn" class="primary xl full outer-pad">New Session</button>
         </div>
       </section>
     </main>
-
-    <footer class="foot">v0.4.6</footer>
+    <footer class="foot">v0.4.7</footer>
   </div>
-
-  <!-- Settings Modal -->
   <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <div class="modal-header">
@@ -98,7 +81,6 @@
         <h3 id="settingsTitle">Settings</h3>
         <button id="settingsClose" class="ghost icon" aria-label="Close">✕</button>
       </div>
-
       <div id="settingsHome" class="pane active">
         <div class="list">
           <button class="list-item" data-open="obsPane">Obstacles</button>
@@ -107,17 +89,14 @@
           <button class="list-item" data-open="aboutPane">About & Tools</button>
         </div>
       </div>
-
       <div id="obsPane" class="pane">
         <h4>Obstacles</h4>
         <div id="obsChips" class="chips"></div>
       </div>
-
       <div id="stancePane" class="pane">
         <h4>Stances</h4>
         <div class="chips" id="stanceChips"></div>
       </div>
-
       <div id="trickPane" class="pane">
         <h4>Tricks</h4>
         <div class="chips subtle" id="catChips"></div>
@@ -126,11 +105,10 @@
           <button data-tab="grinds" class="tab">Grinds/Slides</button>
           <button data-tab="spins" class="tab">Spins</button>
         </div>
-        <div class="panel flips"></div>
-        <div class="panel grinds hidden"></div>
-        <div class="panel spins hidden"></div>
+        <div class="panel flips grid"></div>
+        <div class="panel grinds grid hidden"></div>
+        <div class="panel spins grid hidden"></div>
       </div>
-
       <div id="aboutPane" class="pane">
         <h4>About & Tools</h4>
         <div class="toolrow">
@@ -144,7 +122,6 @@
       </div>
     </div>
   </div>
-
   <script src="app.js"></script>
 </body>
 </html>
