@@ -1,4 +1,25 @@
-// Skate Session — PWA core (dark, minimal, Patch 01 + requests)
+// Skate Session — v0.3.1 (bugfix: startup order, chips render, lazy allowed)
+// + cache-buster + clear-cache tool for quicker iteration
+const VERSION = "0.3.1";
+
+// --- Toggles (load first so generator can see them)
+const DEFAULT_TOGGLES = {
+  flips: {"kickflip":true,"heelflip":true,"varial kickflip":true,"varial heelflip":true,"hardflip":true,"inward heelflip":true,"bigspin flip":true,"bigspin heelflip":true,"tre flip":true,"360 flip":true,"laser flip":true},
+  grinds: {"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"willy":true,"salad":true,"crooked":true,"overcrook":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},
+  spins: {"180":true,"360":true,"540":true,"720":true}
+};
+function loadToggles(){ try{ return JSON.parse(localStorage.getItem('ss_toggles'))||DEFAULT_TOGGLES; }catch{ return DEFAULT_TOGGLES; } }
+function saveToggles(t){ localStorage.setItem('ss_toggles', JSON.stringify(t)); }
+let TOGGLES = loadToggles();
+function enabledFlip(n){ return !!TOGGLES.flips[n]; }
+function enabledGrind(n){ return !!TOGGLES.grinds[n]; }
+function enabledSpin(d){ return !!TOGGLES.spins[String(d)]; }
+
+// --- Obstacles (chips) declared early to avoid undefined on load
+const ALL_OBS = ["flat","curb","ledge","flatbar","handrail","rail","hubba","kicker","gap","stair","quarterpipe","bank","mini ramp","funbox","manual pad","box"];
+let selectedObs = ["flat","ledge","rail","manual pad","quarterpipe","bank","kicker"];
+
+// --- Core rules/scoring
 const RULES = {
   DIRECTION_DEFAULTS: {
     "50-50":"frontside","5-0":"frontside","boardslide":"backside","noseslide":"backside",
@@ -12,13 +33,12 @@ const RULES = {
   FLIPS:["kickflip","heelflip","hardflip","inward heelflip","varial kickflip","varial heelflip","tre flip","360 flip","laser flip","bigspin flip","bigspin heelflip"],
   GRINDS_SLIDES:["50-50","5-0","boardslide","noseslide","tailslide","lipslide","smith","feeble","willy","salad","crooked","overcrook","nosegrind","noseblunt","bluntslide"],
   MANUALS:["manual","nose manual","one wheel manual"],
-  OBSTACLES:["flat","curb","ledge","flatbar","handrail","rail","hubba","kicker","gap","stair","quarterpipe","bank","mini ramp","funbox","manual pad","box"],
+  OBSTACLES: ALL_OBS,
   GRIND_OK:new Set(["rail","handrail","flatbar","ledge","hubba"]),
   SLIDE_OK:new Set(["ledge","hubba","rail","handrail","flatbar","curb","box"]),
-  MANUAL_OK:new Set(["manual pad","box","funbox","kicker","bank"]), // removed 'flat'
+  MANUAL_OK:new Set(["manual pad","box","funbox","kicker","bank"]), // no 'flat'
   AIR_OK:new Set(["flat","gap","kicker","quarterpipe","bank","stair","funbox"]),
 };
-
 const BASE_POINTS = {
   stance:{regular:0, fakie:0.1, nollie:0.2, switch:0.3},
   spin:{180:0.2, 360:0.4, 540:0.6, 720:0.8},
@@ -114,32 +134,7 @@ function allowSpin(spin, s){
 }
 function underScoreCap(components){ const rep = computeScore(components,1); return rep.base <= scoreCapFor(currentSkill||6); }
 
-// Toggles
-const DEFAULT_TOGGLES = {
-  flips: {"kickflip":true,"heelflip":true,"varial kickflip":true,"varial heelflip":true,"hardflip":true,"inward heelflip":true,"bigspin flip":true,"bigspin heelflip":true,"tre flip":true,"360 flip":true,"laser flip":true},
-  grinds: {"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"willy":true,"salad":true,"crooked":true,"overcrook":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},
-  spins: {"180":true,"360":true,"540":true,"720":true}
-};
-function loadToggles(){ try{ return JSON.parse(localStorage.getItem('ss_toggles'))||DEFAULT_TOGGLES; }catch{ return DEFAULT_TOGGLES; } }
-function saveToggles(t){ localStorage.setItem('ss_toggles', JSON.stringify(t)); }
-let TOGGLES = loadToggles();
-function enabledFlip(n){ return !!TOGGLES.flips[n]; }
-function enabledGrind(n){ return !!TOGGLES.grinds[n]; }
-function enabledSpin(d){ return !!TOGGLES.spins[String(d)]; }
-
-// Obstacle chips
-const ALL_OBS = ["flat","curb","ledge","flatbar","handrail","rail","hubba","kicker","gap","stair","quarterpipe","bank","mini ramp","funbox","manual pad","box"];
-let selectedObs = ["flat","ledge","rail","manual pad","quarterpipe","bank","kicker"];
-const obsChips = document.getElementById('obsChips');
-function renderObsChips(){
-  obsChips.innerHTML = ALL_OBS.map(o=>`<button data-o="${o}" class="${selectedObs.includes(o)?'active':''}">${o}</button>`).join('');
-  obsChips.querySelectorAll('button').forEach(b=>{
-    b.onclick = ()=>{ const o=b.dataset.o; selectedObs = selectedObs.includes(o) ? selectedObs.filter(x=>x!==o) : selectedObs.concat([o]); renderObsChips(); };
-  });
-}
-renderObsChips();
-
-// Generator (Patch 01 refined)
+// Generator (Patch 01 refined + bugfix order)
 const HISTORY_WINDOW = 7, DUPLICATE_THRESHOLD = 0.82;
 let _recent = [];
 function pushRecent(c){ _recent.unshift(c); if (_recent.length>HISTORY_WINDOW) _recent.pop(); }
@@ -164,7 +159,6 @@ function generateTrick(skill, allowed){
     let pool = RULES.FLIPS.filter(n=>enabledFlip(n) && allowFlip(n,s));
     if (pool.length){ c.flip = pool[Math.floor(Math.random()*pool.length)]; }
   }
-
   const canGrindish = RULES.GRIND_OK.has(ob) || RULES.SLIDE_OK.has(ob);
   const canManual   = RULES.MANUAL_OK.has(ob);
   const isAir       = RULES.AIR_OK.has(ob);
@@ -214,7 +208,7 @@ function describe(c){
   return parts.join(" ");
 }
 
-// App wiring
+// ---- App wiring (now after all helpers; lazy 'allowed' init) ----
 const els = {
   skill: document.getElementById('skill'),
   skillVal: document.getElementById('skillVal'),
@@ -241,16 +235,24 @@ const els = {
   settingsSave: document.getElementById('settingsSave'),
   settingsClose: document.getElementById('settingsClose'),
   moreBtn: document.getElementById('moreBtn'),
+  obsChips: document.getElementById('obsChips'),
 };
 els.skill.addEventListener('input', e=> els.skillVal.textContent = e.target.value);
 
-let misses=0, total=0, current=null, currentSkill=6, allowed=selectedObsSlice(), attempt=1;
+// Render obstacle chips (now that obsChips is defined)
+function renderObsChips(){
+  els.obsChips.innerHTML = ALL_OBS.map(o=>`<button data-o="${o}" class="${selectedObs.includes(o)?'active':''}">${o}</button>`).join('');
+  els.obsChips.querySelectorAll('button').forEach(b=>{
+    b.onclick = ()=>{ const o=b.dataset.o; selectedObs = selectedObs.includes(o) ? selectedObs.filter(x=>x!==o) : selectedObs.concat([o]); renderObsChips(); };
+  });
+}
+renderObsChips();
 
-function selectedObsSlice(){ return selectedObs.slice(); }
+let misses=0, total=0, current=null, currentSkill=6, allowed=[], attempt=1;
 
 function startSession(){
   currentSkill = parseInt(els.skill.value,10);
-  allowed = selectedObsSlice();
+  allowed = selectedObs.slice();  // lazy init here (fixed)
   misses=0; total=0; attempt=1;
   els.score.textContent = total.toFixed(2);
   els.setupCard.classList.add('hidden');
@@ -311,50 +313,34 @@ function prettyScore(rep){
   return lines.join("\n");
 }
 
-// feedback saver
+// Feedback
 els.feedbackBtn.addEventListener('click', ()=>{
   const note = prompt("Drop feedback here:");
   if (!note) return;
   const bag = JSON.parse(localStorage.getItem('ss_feedback')||'[]');
-  bag.push({note, at: Date.now(), score: total});
+  bag.push({note, at: Date.now(), score: total, version: VERSION});
   localStorage.setItem('ss_feedback', JSON.stringify(bag));
   alert("Saved locally. You can export later.");
 });
 
-// settings modal (toggles)
-const DEFAULT_TOGGLES = {
-  flips: {"kickflip":true,"heelflip":true,"varial kickflip":true,"varial heelflip":true,"hardflip":true,"inward heelflip":true,"bigspin flip":true,"bigspin heelflip":true,"tre flip":true,"360 flip":true,"laser flip":true},
-  grinds: {"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"willy":true,"salad":true,"crooked":true,"overcrook":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},
-  spins: {"180":true,"360":true,"540":true,"720":true}
-};
-function loadToggles(){ try{ return JSON.parse(localStorage.getItem('ss_toggles'))||DEFAULT_TOGGLES; }catch{ return DEFAULT_TOGGLES; } }
-function saveToggles(t){ localStorage.setItem('ss_toggles', JSON.stringify(t)); }
-let TOGGLES = loadToggles();
-function enabledFlip(n){ return !!TOGGLES.flips[n]; }
-function enabledGrind(n){ return !!TOGGLES.grinds[n]; }
-function enabledSpin(d){ return !!TOGGLES.spins[String(d)]; }
-
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsModal = document.getElementById('settingsModal');
-const settingsSave = document.getElementById('settingsSave');
-const settingsClose = document.getElementById('settingsClose');
-settingsBtn.addEventListener('click', ()=>{ renderSettings(); settingsModal.classList.remove('hidden'); });
-settingsClose.addEventListener('click', ()=> settingsModal.classList.add('hidden'));
-settingsSave.addEventListener('click', ()=>{
+// Settings modal
+els.settingsBtn.addEventListener('click', ()=>{ renderSettings(); els.settingsModal.classList.remove('hidden'); });
+els.settingsClose.addEventListener('click', ()=> els.settingsModal.classList.add('hidden'));
+els.settingsSave.addEventListener('click', ()=>{
   document.querySelectorAll('#settingsModal input[type=checkbox]').forEach(cb=>{
     const group = cb.dataset.group, key = cb.dataset.key; TOGGLES[group][key] = cb.checked;
   });
   saveToggles(TOGGLES);
-  settingsModal.classList.add('hidden');
+  els.settingsModal.classList.add('hidden');
 });
 function renderSettings(){
-  const modal = settingsModal;
+  const modal = els.settingsModal;
   const flipsDiv = modal.querySelector('.panel.flips');
   const grindsDiv = modal.querySelector('.panel.grinds');
   const spinsDiv = modal.querySelector('.panel.spins');
   flipsDiv.innerHTML = Object.keys(TOGGLES.flips).map(n=>labelBox('flips',n,TOGGLES.flips[n])).join('');
   grindsDiv.innerHTML = Object.keys(TOGGLES.grinds).map(n=>labelBox('grinds',n,TOGGLES.grinds[n])).join('');
-  spinsDiv.innerHTML = Object.keys(TOGGLES.spins).map(n=>labelBox('spins',n,TOGGLES.spins[n])).join('');  
+  spinsDiv.innerHTML = Object.keys(TOGGLES.spins).map(n=>labelBox('spins',n,TOGGLES.spins[n])).join('');
   modal.querySelectorAll('.tab').forEach(t=>{
     t.onclick=()=>{ modal.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
       modal.querySelectorAll('.panel').forEach(p=>p.classList.add('hidden'));
@@ -363,41 +349,25 @@ function renderSettings(){
 }
 function labelBox(group,key,checked){ const id = `${group}-${key}`.replace(/\s+/g,'-'); return `<label><input id="${id}" type="checkbox" data-group="${group}" data-key="${key}" ${checked?'checked':''}/> ${key}</label>`; }
 
-// Obstacle chips render
-const obsChips = document.getElementById('obsChips');
-const ALL_OBS = ["flat","curb","ledge","flatbar","handrail","rail","hubba","kicker","gap","stair","quarterpipe","bank","mini ramp","funbox","manual pad","box"];
-let selectedObs = ["flat","ledge","rail","manual pad","quarterpipe","bank","kicker"];
-function renderObsChips(){
-  obsChips.innerHTML = ALL_OBS.map(o=>`<button data-o="${o}" class="${selectedObs.includes(o)?'active':''}">${o}</button>`).join('');
-  obsChips.querySelectorAll('button').forEach(b=>{
-    b.onclick = ()=>{ const o=b.dataset.o; selectedObs = selectedObs.includes(o) ? selectedObs.filter(x=>x!==o) : selectedObs.concat([o]); renderObsChips(); };
-  });
-}
-renderObsChips();
-
-// more menu (reset best with password)
+// More menu (reset & clear cache)
 const RESET_PASS = "sk8-reset-2025";
-const moreBtn = document.getElementById('moreBtn');
-moreBtn.addEventListener('click', ()=>{
-  const act = prompt("More:\n- Type 'reset' to clear best score");
+els.moreBtn.addEventListener('click', async ()=>{
+  const act = prompt("More:\n- Type 'reset' to clear best score\n- Type 'clear' to clear cache & reload");
   if (!act) return;
   if (act.toLowerCase()==='reset'){
     const pw = prompt("Password to reset:");
     if (pw===RESET_PASS){ localStorage.removeItem('ss_best'); alert("Best score reset."); }
     else alert("Nope.");
   }
+  if (act.toLowerCase()==='clear'){
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k=>caches.delete(k)));
+    alert("Cache cleared. Reloading…");
+    location.reload(true);
+  }
 });
 
-// feedback saver
-const feedbackBtn = document.getElementById('feedbackBtn');
-feedbackBtn.addEventListener('click', ()=>{
-  const note = prompt("Drop feedback here:");
-  if (!note) return;
-  const bag = JSON.parse(localStorage.getItem('ss_feedback')||'[]');
-  bag.push({note, at: Date.now(), score: total});
-  localStorage.setItem('ss_feedback', JSON.stringify(bag));
-  alert("Saved locally. You can export later.");
-});
-
-// SW
+// SW register
 if ('serviceWorker' in navigator){ window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js')); }
+
+console.log("Skate Session loaded", VERSION);
