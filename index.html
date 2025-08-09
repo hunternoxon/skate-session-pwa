@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0c" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Skate Session</title>
+</head>
+<body>
+  <div class="safe">
+    <header class="topbar">
+      <div class="brand">Skate Session</div>
+      <div class="top-actions">
+        <button id="settingsBtn" class="ghost">⚙️</button>
+        <button id="feedbackBtn" class="ghost">📝</button>
+        <button id="moreBtn" class="ghost">⋯</button>
+      </div>
+    </header>
+
+    <main id="screen">
+      <section class="card" id="setupCard">
+        <div class="row">
+          <label class="lbl">Skill</label>
+          <input id="skill" type="range" min="1" max="10" value="6" />
+          <span id="skillVal">6</span>
+        </div>
+
+        <div class="row">
+          <label class="lbl">Obstacles</label>
+          <div id="obsChips" class="chips"></div>
+        </div>
+
+        <button id="startBtn" class="primary">Start Session</button>
+      </section>
+
+      <section class="card hidden" id="gameCard">
+        <div class="hud">
+          <div id="letters" class="letters" aria-live="polite">S K A T E</div>
+          <div class="attempts">Attempt: <span id="attempt">1</span>/3</div>
+        </div>
+
+        <div id="trick" class="trick" aria-live="polite">—</div>
+
+        <div class="actions right">
+          <button id="landBtn" class="success">Landed</button>
+          <button id="missBtn" class="danger">Missed</button>
+          <button id="nextBtn" class="primary hidden">Next Trick</button>
+        </div>
+
+        <div class="meta"><div>Score: <span id="score">0.00</span></div></div>
+
+        <details id="breakdown" class="breakdown">
+          <summary>Breakdown</summary>
+          <pre id="breakText"></pre>
+        </details>
+
+        <button id="endBtn" class="ghost">End Session</button>
+      </section>
+
+      <section class="card hidden" id="overCard">
+        <h2>Session Over</h2>
+        <div class="big">Final: <span id="finalScore">0.00</span></div>
+        <div>Best: <span id="bestScore">0.00</span></div>
+        <button id="restartBtn" class="primary">New Session</button>
+      </section>
+    </main>
+
+    <footer class="foot">Add to Home Screen for offline play • v0.3</footer>
+  </div>
+
+  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3>Allowed Tricks</h3>
+      <div class="tabs">
+        <button data-tab="flips" class="tab active">Flips</button>
+        <button data-tab="grinds" class="tab">Grinds/Slides</button>
+        <button data-tab="spins" class="tab">Spins</button>
+      </div>
+      <div class="panel flips"></div>
+      <div class="panel grinds hidden"></div>
+      <div class="panel spins hidden"></div>
+      <div class="row end">
+        <button id="settingsClose" class="ghost">Close</button>
+        <button id="settingsSave" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
