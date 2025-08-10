@@ -1,143 +1,118 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0b0c" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0b0b0c"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="style.css"/>
   <title>Brainlock Skateboard Game</title>
 </head>
 <body>
   <div class="safe">
     <header class="topbar">
-      <h1 id="titleText" class="brand-left" aria-label="Brainlock Skateboard Game">Brainlock Skateboard Game</h1>
+      <h1 id="titleText" class="brand-left">Brainlock Skateboard Game</h1>
       <button id="settingsBtn" class="ghost icon" aria-label="Settings">⚙️</button>
     </header>
 
-    <!-- Level pill (always visible) + Edit -->
-    <section class="level-bar">
-      <div class="level-pill">
-        <span id="levelLabel">Level: 6 • Sponsored</span>
-        <button id="levelEdit" class="ghost sm">Edit</button>
-      </div>
+    <section class="level-row">
+      <div id="levelPill" class="pill">Level <span id="levelNum">6</span> • <span id="levelDesc">Advanced am</span> <button id="editLevel" class="link">Edit</button></div>
     </section>
 
-    <!-- Game options tray (swapped placement: sits where edit used to be under title) -->
     <section class="preview-tray" id="previewTray">
-      <div class="tray-head">
-        <span class="tray-title">Game options</span>
-        <button id="collapsePreview" class="collapse-btn" aria-expanded="true" aria-label="Toggle game options">▲</button>
-      </div>
+      <div class="preview-head"><span class="muted">Game options</span><button id="collapsePreview" class="collapse-btn" aria-expanded="true">▲</button></div>
       <div class="preview-grid">
-        <div class="status-pill">Obstacles: <span id="obsNames">—</span> <button id="openObs" class="link">Edit</button></div>
-        <div class="status-pill">Stances: <span id="stanceNames">—</span> <button id="openStance" class="link">Edit</button></div>
-        <div class="status-pill">Tricks: <span id="trickSummary">—</span> <button id="openTricks" class="link">Edit</button></div>
-      </div>
-    </section>
-
-    <!-- Score strip -->
-    <section class="status-strip" id="scoreStrip">
-      <div class="status-pill" id="scoreModeSetup">High Score: <button id="highScoreBtn" class="link score-link"><span id="highScoreTop">0.00 pts</span></button></div>
-      <div class="status-pill hidden" id="scoreModeActive">Total Score: <span id="scoreActive">0.00 pts</span></div>
-      <div class="status-pill hidden" id="scoreModeOver">
-        <span>Final: <span id="finalLeft">0.00 pts</span></span>
-        <span style="margin-left:12px">High: <button id="highScoreBtn2" class="link score-link"><span id="highScoreTop2">0.00 pts</span></button></span>
+        <div class="status-pill">Obstacles: <span id="obsNames">rail, ledge</span> <button id="editObs" class="link">Edit</button></div>
+        <div class="status-pill">Stances: <span id="stanceNames">regular, switch</span> <button id="editStance" class="link">Edit</button></div>
+        <div class="status-pill">Tricks: <span id="trickSummary">Flips/Grinds • F:8 G:8 S:2</span> <button id="editTricks" class="link">Edit</button></div>
       </div>
     </section>
 
     <main id="screen">
       <section class="card sheet" id="sheet">
-        <!-- View: Setup -->
-        <div id="viewSetup" class="view active">
-          <div class="hero-emoji" aria-hidden="true">🧠 🔒 🛹</div>
-          <button id="startBtn" class="primary xl full start-cta">Start Session</button>
+        <div class="sheet-header">
+          <div id="letters" class="letters-sheet"><span>S</span><span>K</span><span>A</span><span>T</span><span>E</span></div>
+          <div class="score-mini">
+            <button id="highScoreBtn" class="pill small ghost">High: <span id="highTop">0.00</span> pts</button>
+          </div>
         </div>
 
-        <!-- View: Game -->
+        <div id="viewSetup" class="view active">
+          <div class="hero-emoji">🧠 🔒 🛹</div>
+          <button id="startBtn" class="primary xl full">Start Session</button>
+        </div>
+
         <div id="viewGame" class="view hidden" aria-live="polite">
-          <div id="trick" class="trick bigtitle focus">
+          <div id="trick" class="trick bigtitle">
             <div class="trick-topline">
               <span id="attemptBadge" class="badge">Attempt 1/3</span>
-              <button id="attemptPointsBtn" class="badge right linklike">This attempt: <span id="attemptPoints">0.00 pts</span></button>
+              <button id="attemptPoints" class="badge right linkish">This attempt: —</button>
             </div>
             <div id="trickText">—</div>
           </div>
-
-          <div class="actions right">
+          <div class="actions right" id="playButtons">
             <button id="skipBtn" class="ghost xl">Skip</button>
             <button id="missBtn" class="danger xl">Miss</button>
             <button id="landBtn" class="success xl">Land</button>
             <button id="nextBtn" class="primary xl hidden">Next</button>
           </div>
-
           <div class="sheet-actions left">
-            <button id="endBtn" class="ghost lg no-red">End Session</button>
+            <button id="endBtn" class="ghost lg">End Session</button>
           </div>
         </div>
 
-        <!-- View: Over -->
         <div id="viewOver" class="view hidden">
-          <div class="hero-emoji" aria-hidden="true">🧠 🔒 🛹</div>
+          <div class="hero-emoji">🧠 🔒 🛹</div>
+          <div class="row scores">
+            <div class="big">Final: <span id="finalScore">0.00</span> pts</div>
+            <button id="highScoreBtnOver" class="pill small ghost">High: <span id="highTopOver">0.00</span> pts</button>
+          </div>
           <button id="restartBtn" class="primary xl full">New Session</button>
         </div>
       </section>
     </main>
 
-    <footer class="foot">v0.5.3</footer>
+    <footer class="foot">v0.5.4</footer>
   </div>
 
   <!-- Overlays -->
-  <div id="overlayBackdrop" class="overlay hidden">
-    <div class="overlay-card" role="dialog" aria-modal="true">
-      <div class="overlay-body" id="overlayBody"></div>
-      <div class="overlay-actions">
-        <button id="overlayClose" class="ghost full">X</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Confirm End Session -->
-  <div id="confirmBackdrop" class="overlay hidden">
-    <div class="overlay-card" role="dialog" aria-modal="true">
-      <div class="overlay-body">
-        <h3>End session?</h3>
-        <p>Are you sure you want to end this session early?</p>
-      </div>
-      <div class="overlay-actions split">
-        <button id="confirmYes" class="danger">Yes, end</button>
-        <button id="confirmCancel" class="ghost">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings modal (About & Tools only) -->
-  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div id="overlay" class="modal hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="settingsTitle">Settings</h3>
-        <button id="settingsClose" class="ghost icon" aria-label="Close">✕</button>
+        <h3 id="overlayTitle">Overlay</h3>
+      </div>
+      <div id="overlayBody" class="pane active"></div>
+      <div class="modal-footer">
+        <button id="overlayPrimary" class="primary hidden">OK</button>
+        <button id="overlaySecondary" class="ghost">X</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>About & Tools</h3>
       </div>
       <div class="pane active">
         <div class="list">
-          <div class="list-item">
-            <h4>Game Rules</h4>
-            <p class="muted">Land tricks to avoid letters in SKATE. 5 letters ends the session. Points scale with difficulty; combos earn bonuses. Attempts reduce points: 1st 1.00×, 2nd 0.85×, 3rd 0.75×.</p>
-          </div>
-          <div class="list-item">
-            <h4>Nickname</h4>
-            <input id="nickname" class="input" placeholder="Enter nickname" />
-          </div>
-          <div class="list-item">
-            <h4>About & Tools</h4>
-            <div class="toolrow">
-              <button id="exportFeedback" class="ghost lg">Export Feedback</button>
-              <button id="clearCache" class="ghost lg">Clear Cache & Reload</button>
-            </div>
-            <p class="muted">Version: v0.5.3 • Updated: 2025-08-10</p>
-          </div>
+          <label class="list-item row">
+            <span>Admin Mode</span>
+            <input id="adminToggle" type="checkbox"/>
+          </label>
+          <label class="list-item row">
+            <span>Nickname</span>
+            <input id="nickname" type="text" placeholder="Your name"/>
+          </label>
+          <button id="viewRules" class="list-item">Game Rules</button>
+          <button id="clearCache" class="list-item">Clear Cache & Reload</button>
+          <button id="exportFeedback" class="list-item">Export Feedback</button>
+          <div class="muted small">Version: 0.5.4 • Updated: 2025-08-10</div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <button id="settingsClose" class="ghost">X</button>
       </div>
     </div>
   </div>

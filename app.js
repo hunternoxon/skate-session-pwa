@@ -1,169 +1,316 @@
-const VERSION="0.5.3"; const UPDATED="2025-08-10";
-const DEFAULTS={"categories":{"flips":true,"grinds":true,"manuals":true,"airs":true,"spins":true},"stances":{"regular":true,"fakie":true,"nollie":true,"switch":true},"flips":{"kickflip":true,"heelflip":true,"varial kickflip":true,"varial heelflip":true,"hardflip":true,"inward heelflip":true,"bigspin flip":true,"bigspin heelflip":true,"tre flip":true,"360 flip":true,"laser flip":true},"grinds":{"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"willy":true,"salad":true,"crooked":true,"overcrook":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},"spins":{"180":true,"360":true,"540":true,"720":true},"obstacles":["flat","ledge","rail","manual pad","quarterpipe","bank","kicker"],"level":6,"nickname":""};
-function loadState(){ try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('bl_state')||"{}")); }catch{ return DEFAULTS; } }
-function saveState(s){ localStorage.setItem('bl_state', JSON.stringify(s)); }
-let STATE = loadState();
-const $ = (id)=>document.getElementById(id);
-const els = { "titleText":$('titleText'), "settingsBtn":$('settingsBtn'), "levelLabel":$('levelLabel'), "levelEdit":$('levelEdit'), "previewTray":$('previewTray'), "collapsePreview":$('collapsePreview'), "obsNames":$('obsNames'), "stanceNames":$('stanceNames'), "trickSummary":$('trickSummary'), "openObs":$('openObs'), "openStance":$('openStance'), "openTricks":$('openTricks'), "scoreModeSetup":$('scoreModeSetup'), "scoreModeActive":$('scoreModeActive'), "scoreModeOver":$('scoreModeOver'), "highScoreBtn":$('highScoreBtn'), "highScoreBtn2":$('highScoreBtn2'), "highScoreTop":$('highScoreTop'), "highScoreTop2":$('highScoreTop2'), "scoreActive":$('scoreActive'), "finalLeft":$('finalLeft'), "sheet":$('sheet'), "viewSetup":$('viewSetup'), "viewGame":$('viewGame'), "viewOver":$('viewOver'), "startBtn":$('startBtn'), "endBtn":$('endBtn'), "restartBtn":$('restartBtn'), "attemptBadge":$('attemptBadge'), "attemptPoints":$('attemptPoints'), "attemptPointsBtn":$('attemptPointsBtn'), "trickText":$('trickText'), "nextBtn":$('nextBtn'), "landBtn":$('landBtn'), "missBtn":$('missBtn'), "skipBtn":$('skipBtn'), "overlayBackdrop":$('overlayBackdrop'), "overlayBody":$('overlayBody'), "overlayClose":$('overlayClose'), "confirmBackdrop":$('confirmBackdrop'), "confirmYes":$('confirmYes'), "confirmCancel":$('confirmCancel'), "settingsModal":$('settingsModal'), "settingsClose":$('settingsClose'), "nickname":$('nickname'), "clearCache":$('clearCache'), "exportFeedback":$('exportFeedback') };
-els.titleText.addEventListener('click', ()=>location.reload());
-els.settingsBtn.addEventListener('click', ()=>{ els.settingsModal.classList.remove('hidden'); els.nickname.value=STATE.nickname||""; });
-els.settingsClose.addEventListener('click', ()=>els.settingsModal.classList.add('hidden'));
-els.nickname.addEventListener('change', ()=>{ STATE.nickname = els.nickname.value.trim(); saveState(STATE); });
-function fmtPts(n){ return (n.toFixed(2)+" pts"); }
-function setView(which){
-  els.viewSetup.classList.toggle('active', which==="setup"); els.viewSetup.classList.toggle('hidden', which!=="setup");
-  els.viewGame.classList.toggle('active', which==="game"); els.viewGame.classList.toggle('hidden', which!=="game");
-  els.viewOver.classList.toggle('active', which==="over"); els.viewOver.classList.toggle('hidden', which!=="over");
-  els.scoreModeSetup.classList.toggle('hidden', which!=="setup");
-  els.scoreModeActive.classList.toggle('hidden', which!=="game");
-  els.scoreModeOver.classList.toggle('hidden', which!=="over");
+// v0.5.4 — Admin Mode + Tray fixes + High Score button
+const VERSION="0.5.4";
+
+const DEFAULTS={
+  obstacles:["flat","ledge","rail","handrail","flatbar","hubba","manual pad","bank","quarterpipe","gap","stair"],
+  stances:{regular:true,switch:true,nollie:true,fakie:true},
+  categories:{flips:true,grinds:true,spins:true,manuals:true,airs:true},
+  flips:{"kickflip":true,"heelflip":true,"varial kickflip":true,"varial heelflip":true,"hardflip":true,"tre flip":true,"laser flip":true},
+  grinds:{"50-50":true,"5-0":true,"boardslide":true,"crooked":true,"nosegrind":true,"bluntslide":true,"noseblunt":true},
+  spins:{"180":true,"360":true,"540":false,"720":false},
+  level:6,
+  nickname:""
+};
+function loadState(){try{return JSON.parse(localStorage.getItem('bl_state'))||DEFAULTS}catch{ return DEFAULTS}}
+function saveState(s){localStorage.setItem('bl_state',JSON.stringify(s))}
+let STATE=loadState();
+
+function getScores(){return JSON.parse(localStorage.getItem('bl_scores')||"[]")}
+function setScores(arr){localStorage.setItem('bl_scores',JSON.stringify(arr))}
+function addScore(nickname,value){const arr=getScores();arr.push({id:String(Date.now())+Math.random().toString(16).slice(2),nickname,value,created_at:Date.now()});arr.sort((a,b)=>b.value-a.value);setScores(arr);}
+function isAdmin(){return localStorage.getItem('bl_admin')==="1"}
+function setAdmin(on){localStorage.setItem('bl_admin',on?"1":"0")}
+
+const $=id=>document.getElementById(id);
+const els={
+  title:$("titleText"),
+  settingsBtn:$("settingsBtn"),
+  overlay:$("overlay"),
+  overlayTitle:$("overlayTitle"),
+  overlayBody:$("overlayBody"),
+  overlayPrimary:$("overlayPrimary"),
+  overlaySecondary:$("overlaySecondary"),
+  settingsModal:$("settingsModal"),
+  settingsClose:$("settingsClose"),
+  adminToggle:$("adminToggle"),
+  nickname:$("nickname"),
+  viewSetup:$("viewSetup"),
+  viewGame:$("viewGame"),
+  viewOver:$("viewOver"),
+  startBtn:$("startBtn"),
+  restartBtn:$("restartBtn"),
+  endBtn:$("endBtn"),
+  letters:$("letters"),
+  attemptBadge:$("attemptBadge"),
+  attemptPoints:$("attemptPoints"),
+  trickText:$("trickText"),
+  nextBtn:$("nextBtn"),
+  playButtons:$("playButtons"),
+  highScoreBtn:$("highScoreBtn"),
+  highScoreBtnOver:$("highScoreBtnOver"),
+  highTop:$("highTop"),
+  highTopOver:$("highTopOver"),
+  editLevel:$("editLevel"),
+  levelNum:$("levelNum"),
+  levelDesc:$("levelDesc"),
+  collapsePreview:$("collapsePreview"),
+  previewTray:$("previewTray"),
+  obsNames:$("obsNames"),
+  stanceNames:$("stanceNames"),
+  trickSummary:$("trickSummary"),
+  editObs:$("editObs"),
+  editStance:$("editStance"),
+  editTricks:$("editTricks"),
+  clearCache:$("clearCache"),
+  exportFeedback:$("exportFeedback"),
+  viewRules:$("viewRules"),
+};
+
+const LEVEL_DESC={1:"Beginner",2:"Basic",3:"Park flow",4:"Consistent am",5:"Local ripper",6:"Advanced am",7:"Sponsored",8:"Pro",9:"Top pro",10:"Ender-only"};
+
+function openOverlay(title, bodyHtml, {primary=null, onPrimary=null, secondaryText="X"}={}){
+  els.overlayTitle.textContent=title;
+  els.overlayBody.innerHTML=bodyHtml;
+  if(primary){ els.overlayPrimary.textContent=primary; els.overlayPrimary.classList.remove("hidden"); els.overlayPrimary.onclick=onPrimary||null; }
+  else { els.overlayPrimary.classList.add("hidden"); els.overlayPrimary.onclick=null; }
+  els.overlaySecondary.textContent=secondaryText;
+  els.overlay.classList.remove("hidden");
 }
-function getScores(){ try{ return JSON.parse(localStorage.getItem('bl_scores')||"[]"); }catch{ return []; } }
-function pushScore(score){
-  const list = getScores();
-  list.push({score, name:STATE.nickname||"Guest", when:Date.now()});
-  list.sort((a,b)=>b.score-a.score); localStorage.setItem('bl_scores', JSON.stringify(list.slice(0,50)));
+function closeOverlay(){ els.overlay.classList.add("hidden"); els.overlayPrimary.onclick=null; }
+els.overlaySecondary.addEventListener('click', closeOverlay);
+
+els.settingsBtn.addEventListener('click',()=>{
+  els.adminToggle.checked=isAdmin();
+  els.nickname.value=STATE.nickname||"";
+  els.settingsModal.classList.remove('hidden');
+});
+$("settingsClose").addEventListener('click',()=>els.settingsModal.classList.add('hidden'));
+els.adminToggle.addEventListener('change',e=>setAdmin(e.target.checked));
+els.nickname.addEventListener('input',e=>{STATE.nickname=e.target.value; saveState(STATE);});
+els.clearCache.addEventListener('click', async ()=>{
+  if('caches'in window){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+  if('serviceWorker'in navigator){ const regs=await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r=>r.unregister())); }
+  location.reload();
+});
+els.exportFeedback.addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({state:STATE,scores:getScores()},null,2)],{type:"application/json"});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="brainlock-export.json"; a.click();
+});
+els.viewRules.addEventListener('click',()=>{
+  openOverlay("Game Rules", "<ul><li>3 attempts per trick</li><li>Miss all 3 → letter</li><li>5 letters = SKATE = session over</li><li>Scores in pts; earlier attempts score higher</li></ul>");
+});
+
+els.collapsePreview.addEventListener('click',()=>{
+  const c=els.previewTray.classList.toggle('collapsed');
+  els.collapsePreview.textContent = c ? "▼" : "▲";
+  els.collapsePreview.setAttribute('aria-expanded', String(!c));
+});
+
+function bestScore(){ const arr=getScores(); return arr.length?arr[0].value:0; }
+function refreshHigh(){
+  const b=bestScore();
+  els.highTop.textContent=b.toFixed(2);
+  els.highTopOver.textContent=b.toFixed(2);
 }
-function bestScore(){ const l=getScores(); return l.length? l[0].score : 0; }
-function renderHighScorePills(){ const best=bestScore(); els.highScoreTop.textContent=fmtPts(best); els.highScoreTop2.textContent=fmtPts(best); }
-function openHighScores(){
-  const list=getScores().slice(0,10);
-  const rows=list.map((r,i)=>"<div style='display:flex;justify-content:space-between'><div>#"+(i+1)+" — "+r.name+"</div><div>"+fmtPts(r.score)+"</div></div>").join('');
-  els.overlayBody.innerHTML = "<h3>Top 10 High Scores</h3>"+(rows||"<p class='muted'>No scores yet.</p>");
-  els.overlayBackdrop.classList.remove('hidden');
+function showHighScores(){
+  const rows=getScores().slice(0,10);
+  let html="<ol class='list'>";
+  rows.forEach(r=>{
+    html+=`<li class="list-item row"><span>${r.nickname||"Player"} — ${r.value.toFixed(2)} pts</span>`;
+    if(isAdmin()){ html+=`<button data-id="${r.id}" class="ghost small">🗑️</button>`; }
+    html+="</li>";
+  });
+  html+="</ol>";
+  if(isAdmin()){ html+=`<div class="row" style="justify-content:center;margin-top:8px"><button id="restoreDemo" class="ghost">Restore demo Top 10</button></div>`;}
+  openOverlay("High Scores", html);
+  els.overlayBody.querySelectorAll('button[data-id]').forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.getAttribute('data-id');
+      openOverlay("Remove this score?", "<p>This will remove the entry from Top 10.</p>", {primary:"Yes, remove", onPrimary:()=>{ 
+        const filtered=getScores().filter(s=>s.id!==id); setScores(filtered); closeOverlay(); showHighScores(); refreshHigh();
+      }, secondaryText:"Cancel"});
+    };
+  });
+  const demo=$("restoreDemo"); if(demo){ demo.onclick=()=>{ seedDemoScores(true); closeOverlay(); showHighScores(); refreshHigh(); }; }
 }
-els.highScoreBtn.addEventListener('click', openHighScores);
-els.highScoreBtn2.addEventListener('click', openHighScores);
-function openOverlayFor(kind){
-  if (kind==="obstacles"){
-    const all=["flat","curb","ledge","flatbar","handrail","rail","hubba","kicker","gap","stair","quarterpipe","bank","mini ramp","funbox","manual pad","box"];
-    els.overlayBody.innerHTML="<h3>Obstacles</h3><div class='chips'>"+all.map(o=>"<button data-o='"+o+"' class='"+(STATE.obstacles.includes(o)?"active":"")+"'>"+o+"</button>").join('')+"</div>";
-    els.overlayBackdrop.classList.remove('hidden');
-    els.overlayBody.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{ const o=b.dataset.o; STATE.obstacles=STATE.obstacles.includes(o)?STATE.obstacles.filter(x=>x!==o):STATE.obstacles.concat([o]); renderObsSummary(); saveState(STATE); b.classList.toggle('active'); });
+els.highScoreBtn.addEventListener('click', showHighScores);
+els.highScoreBtnOver.addEventListener('click', showHighScores);
+
+let misses=0,total=0,current=null,attempt=1;
+function updateLetters(){
+  const spans=[...els.letters.children];
+  spans.forEach((s,i)=>s.classList.toggle('lost', i<misses));
+}
+
+els.editLevel.addEventListener('click',()=>{
+  let html="<div class='list'>";
+  for(let i=1;i<=10;i++){
+    html+=`<button class="list-item row" data-level="${i}"><span>Level ${i} • ${LEVEL_DESC[i]}</span>${i===STATE.level?'<span class="muted">current</span>':''}</button>`;
   }
-  if (kind==="stances"){
-    const keys=["regular","fakie","nollie","switch"];
-    els.overlayBody.innerHTML="<h3>Stances</h3><div class='chips'>"+keys.map(k=>"<button data-k='"+k+"' class='"+(STATE.stances[k]?"active":"")+"'>"+k+"</button>").join('')+"</div>";
-    els.overlayBackdrop.classList.remove('hidden');
-    els.overlayBody.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{ const k=b.dataset.k; STATE.stances[k]=!STATE.stances[k]; renderStanceSummary(); saveState(STATE); b.classList.toggle('active'); });
-  }
-  if (kind==="tricks"){
-    function section(name,key,items){
-      const enabled=STATE.categories[key];
-      const chips = items.map(it=>"<label><input type='checkbox' data-group='"+key+"' data-key='"+it+"' "+(STATE[key][it]?"checked":"")+" "+(enabled?"":"disabled")+"/> "+it+"</label>").join('');
-      return "<div class='list-item'><h4>"+name+"</h4><div class='chips'><button data-cat='"+key+"' class='"+(enabled?"active":"")+"'>"+(enabled?"On":"Off")+"</button></div><div class='panel'>"+chips+"</div></div>";
-    }
-    const flips=Object.keys(STATE.flips), grinds=Object.keys(STATE.grinds), spins=Object.keys(STATE.spins);
-    els.overlayBody.innerHTML="<h3>Tricks</h3>"+section("Flips","flips",flips)+section("Grinds/Slides","grinds",grinds)+section("Spins","spins",spins);
-    els.overlayBackdrop.classList.remove('hidden');
-    els.overlayBody.querySelectorAll('button[data-cat]').forEach(b=>b.onclick=()=>{ const k=b.dataset.cat; STATE.categories[k]=!STATE.categories[k]; saveState(STATE); openOverlayFor("tricks"); renderTrickSummary(); });
-    els.overlayBody.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{ const g=cb.dataset.group, k=cb.dataset.key; STATE[g][k]=cb.checked; saveState(STATE); renderTrickSummary(); });
-  }
-}
-els.openObs.addEventListener('click', ()=>openOverlayFor("obstacles"));
-els.openStance.addEventListener('click', ()=>openOverlayFor("stances"));
-els.openTricks.addEventListener('click', ()=>openOverlayFor("tricks"));
-els.overlayClose.addEventListener('click', ()=>els.overlayBackdrop.classList.add('hidden'));
-els.overlayBackdrop.addEventListener('click', (e)=>{ if(e.target===els.overlayBackdrop) els.overlayBackdrop.classList.add('hidden'); });
-const LEVEL_DESCS={1:"Basics",2:"Beginner",3:"Comfortable",4:"Intermediate",5:"Strong",6:"Sponsored",7:"Semi‑Pro",8:"Pro",9:"Enders",10:"Comically hard"};
-function openLevelOverlay(){
-  const grid = Array.from({length:10}, (_,i)=>i+1).map(n=>"<button data-l='"+n+"' class='ghost level-box "+(STATE.level===n?"active":"")+"'>"+n+"<div class='muted' style='font-size:12px'>"+LEVEL_DESCS[n]+"</div></button>").join('');
-  els.overlayBody.innerHTML = "<h3>Difficulty</h3><div class='level-grid'>"+grid+"</div>";
-  els.overlayBackdrop.classList.remove('hidden');
-  els.overlayBody.querySelectorAll('button[data-l]').forEach(b=>b.onclick=()=>{ STATE.level=parseInt(b.dataset.l,10); saveState(STATE); renderLevelPill(); els.overlayBackdrop.classList.add('hidden'); });
-}
-els.levelEdit.addEventListener('click', openLevelOverlay);
-els.collapsePreview.addEventListener('click', ()=>{ const c=els.previewTray.classList.toggle('collapsed'); els.collapsePreview.textContent=c?'▼':'▲'; });
-function renderObsSummary(){ els.obsNames.textContent=(STATE.obstacles&&STATE.obstacles.length)?STATE.obstacles.join(", "):"—"; }
-function renderStanceSummary(){ const on=Object.keys(STATE.stances).filter(k=>STATE.stances[k]); els.stanceNames.textContent=on.join(", ")||"—"; }
-function renderTrickSummary(){ const cats=Object.entries(STATE.categories).filter(([k,v])=>v).map(([k])=>k).join("/"); const ef=Object.keys(STATE.flips).filter(k=>STATE.flips[k]).length; const eg=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]).length; const es=Object.keys(STATE.spins).filter(k=>STATE.spins[k]).length; els.trickSummary.textContent=(cats||"—")+" • F:"+ef+" G:"+eg+" S:"+es; }
-function renderLevelPill(){ els.levelLabel.textContent = "Level: "+STATE.level+" • "+LEVEL_DESCS[STATE.level]; }
-function renderAll(){ renderObsSummary(); renderStanceSummary(); renderTrickSummary(); renderLevelPill(); renderHighScorePills(); }
-renderAll();
-const RULES={ "GRIND_OK":new Set(["rail","handrail","flatbar","ledge","hubba"]), "SLIDE_OK":new Set(["ledge","hubba","rail","handrail","flatbar","curb","box"]), "MANUAL_OK":new Set(["manual pad","box","funbox","kicker","bank"]), "AIR_OK":new Set(["flat","gap","kicker","quarterpipe","bank","stair","funbox"]) };
-function pickObstacle(){ const src=(STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:DEFAULTS.obstacles); return src[Math.floor(Math.random()*src.length)]||"flat"; }
-function generateTrick(){
-  const ob=pickObstacle();
-  const allowFlips=STATE.categories.flips && Object.values(STATE.flips).some(Boolean);
-  const allowGrinds=STATE.categories.grinds && Object.values(STATE.grinds).some(Boolean);
-  const allowManuals=STATE.categories.manuals;
-  const patterns=[];
-  if (allowGrinds && (RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))) patterns.push('grindOnly');
-  if (allowManuals && RULES.MANUAL_OK.has(ob)) patterns.push('manualOnly');
-  if (allowFlips && (RULES.AIR_OK.has(ob)||["rail","handrail","flatbar"].includes(ob))) patterns.push('flipOnly');
-  if (allowFlips && allowGrinds && (RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))) patterns.push('flipToGrind');
-  let pat = patterns[Math.floor(Math.random()*patterns.length)];
-  function randKey(obj){ const keys=Object.keys(obj).filter(k=>obj[k]); return keys[Math.floor(Math.random()*keys.length)]; }
-  let res=null;
-  for(let i=0;i<20;i++){
-    if(!pat) break;
-    if(pat==='flipOnly'){ const flip=randKey(STATE.flips)||"kickflip"; res={flip, obstacle:ob}; break; }
-    if(pat==='grindOnly'){ const pool=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]); const g=pool[Math.floor(Math.random()*pool.length)]||"50-50"; res={grind_slide:g, obstacle:ob, direction:"frontside"}; break; }
-    if(pat==='manualOnly'){ res={manual:"manual", obstacle:ob}; break; }
-    if(pat==='flipToGrind'){ const flip=randKey(STATE.flips)||"kickflip"; const pool=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]); const g=pool[Math.floor(Math.random()*pool.length)]||"50-50"; res={flip, grind_slide:g, obstacle:ob, direction:"frontside"}; break; }
-  }
-  if(!res) res={flip:"kickflip", obstacle: RULES.AIR_OK.has(ob)?ob:"flat"};
-  return res;
-}
-function describe(c){
-  const rail=["rail","handrail","flatbar"].includes(c.obstacle);
-  if(c.flip && !c.grind_slide && !c.manual && rail) return c.flip+" over "+c.obstacle;
-  const parts=[];
-  if(c.flip) parts.push(c.flip);
-  if(c.direction && c.grind_slide) parts.push(c.direction+" "+c.grind_slide); else if(c.grind_slide) parts.push(c.grind_slide);
-  if(c.manual) parts.push(c.manual);
-  if(c.obstacle) parts.push("on "+c.obstacle);
-  return parts.join(" ");
-}
-const BASE={ "flip":{"kickflip":0.3,"heelflip":0.35,"varial kickflip":0.45,"varial heelflip":0.5,"hardflip":0.55,"inward heelflip":0.6,"tre flip":0.8,"360 flip":0.8,"laser flip":0.85,"bigspin flip":0.6,"bigspin heelflip":0.65}, "grind_slide":{"50-50":0.3,"5-0":0.4,"boardslide":0.4,"noseslide":0.45,"tailslide":0.5,"lipslide":0.55,"smith":0.65,"feeble":0.65,"willy":0.55,"salad":0.6,"crooked":0.65,"overcrook":0.75,"nosegrind":0.7,"noseblunt":0.9,"bluntslide":0.85}, "manual":{"manual":0.25,"nose manual":0.35,"one wheel manual":0.6}, "obstacle":{"flat":0,"manual pad":0.1,"box":0.1,"curb":0.15,"ledge":0.25,"hubba":0.35,"flatbar":0.35,"rail":0.45,"handrail":0.55,"gap":0.5,"kicker":0.1,"stair":0.45,"quarterpipe":0.4,"bank":0.25,"funbox":0.2,"mini ramp":0.3} };
-const BONUS={ "flip_to_grind":0.3 }, ATTEMPT={1:1.00,2:0.85,3:0.75};
+  html+="</div>";
+  openOverlay("Difficulty", html);
+  els.overlayBody.querySelectorAll('[data-level]').forEach(btn=>{
+    btn.onclick=()=>{ STATE.level=parseInt(btn.dataset.level,10); saveState(STATE); renderLevel(); closeOverlay(); };
+  });
+});
+function renderLevel(){ $("levelNum").textContent=STATE.level; $("levelDesc").textContent=LEVEL_DESC[STATE.level]; }
+
+const RULES={
+  GRIND_OK:new Set(["rail","handrail","flatbar","ledge","hubba"]),
+  SLIDE_OK:new Set(["ledge","hubba","rail","handrail","flatbar"]),
+  AIR_OK:new Set(["flat","gap","kicker","quarterpipe","bank","stair"]),
+};
+const BASE_POINTS = {
+  stance:{regular:0, fakie:0.1, nollie:0.2, switch:0.3},
+  spin:{180:0.2, 360:0.4, 540:0.6, 720:0.8},
+  flip:{"kickflip":0.3,"heelflip":0.35,"hardflip":0.55,"varial kickflip":0.45,"varial heelflip":0.5,"tre flip":0.8,"laser flip":0.85},
+  grind_slide:{"50-50":0.3,"5-0":0.4,"boardslide":0.4,"crooked":0.65,"nosegrind":0.7,"bluntslide":0.85,"noseblunt":0.9},
+  obstacle:{"flat":0,"ledge":0.25,"hubba":0.35,"flatbar":0.35,"rail":0.45,"handrail":0.55,"gap":0.5,"quarterpipe":0.4,"bank":0.25,"stair":0.45,"manual pad":0.1}
+};
+const COMBO_BONUSES={ flip_into_grind:0.25, spin_plus_flip:0.2, spin_into_grind:0.15 };
 function computeScore(c,a){
   let s=1.0;
-  if(c.flip) s+=BASE.flip[c.flip]||0;
-  if(c.grind_slide) s+=BASE.grind_slide[c.grind_slide]||0;
-  if(c.manual) s+=BASE.manual[c.manual]||0;
-  if(c.obstacle) s+=BASE.obstacle[c.obstacle]||0;
-  if(c.flip && c.grind_slide) s*=(1+BONUS.flip_to_grind);
-  const mult=ATTEMPT[a]||0;
-  const base=Math.max(s,0.1);
-  return {base, final:base*mult};
+  if(c.stance){ s+=BASE_POINTS.stance[c.stance]||0; }
+  if(c.spin){ s+=BASE_POINTS.spin[c.spin]||0; }
+  if(c.flip){ s+=BASE_POINTS.flip[c.flip]||0; }
+  if(c.grind_slide){ s+=BASE_POINTS.grind_slide[c.grind_slide]||0; }
+  if(c.obstacle){ s+=BASE_POINTS.obstacle[c.obstacle]||0; }
+  let bonus=0;
+  if(c.flip&&c.grind_slide) bonus+=COMBO_BONUSES.flip_into_grind;
+  if(c.spin&&c.flip) bonus+=COMBO_BONUSES.spin_plus_flip;
+  if(c.spin&&c.grind_slide) bonus+=COMBO_BONUSES.spin_into_grind;
+  s*=(1+bonus);
+  const mult={1:1.00,2:0.85,3:0.75}[a]||1.0;
+  const final=Math.max(0.1, s*mult);
+  return {final, breakdown:[["base",s.toFixed(2)],["attempt",`${a} => x${mult}`]]};
 }
-let current=null, attempt=1, total=0;
-function updateAttemptUI(){
-  els.attemptBadge.textContent="Attempt "+attempt+"/3";
-  const rep=computeScore(current,attempt);
-  els.attemptPoints.textContent=fmtPts(rep.final);
+function attemptText(){ const rep=computeScore(current,attempt); return `This attempt: ${rep.final.toFixed(2)} pts`; }
+
+function pickObstacle(){ const list=STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:DEFAULTS.obstacles; return list[Math.floor(Math.random()*list.length)]; }
+function stancePool(){ return Object.keys(STATE.stances).filter(k=>STATE.stances[k] && k!=="regular"); }
+function generateTrick(){
+  const ob=pickObstacle();
+  const allowFlips=STATE.categories.flips;
+  const allowGrinds=STATE.categories.grinds && (RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob));
+  const allowSpins=STATE.categories.spins;
+  const parts={obstacle:ob};
+  const pool=stancePool(); if(Math.random()<0.2 && pool.length) parts.stance=pool[Math.floor(Math.random()*pool.length)];
+  const patterns=[];
+  if(allowGrinds) patterns.push("grindOnly","flipToGrind");
+  if(allowFlips) patterns.push("flipOnly");
+  if(!patterns.length) patterns.push("flipOnly");
+  const pat=patterns[Math.floor(Math.random()*patterns.length)];
+  if(pat==="flipToGrind"){
+    const flips=Object.keys(STATE.flips).filter(k=>STATE.flips[k]);
+    const grs=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]);
+    parts.flip=flips.length?flips[Math.floor(Math.random()*flips.length)]:null;
+    parts.grind_slide=grs.length?grs[Math.floor(Math.random()*grs.length)]:null;
+  } else if(pat==="grindOnly"){
+    const grs=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]);
+    parts.grind_slide=grs.length?grs[Math.floor(Math.random()*grs.length)]:null;
+  } else {
+    const flips=Object.keys(STATE.flips).filter(k=>STATE.flips[k]);
+    parts.flip=flips.length?flips[Math.floor(Math.random()*flips.length)]:null;
+    if(allowSpins){ const spins=Object.keys(STATE.spins).filter(k=>STATE.spins[k]==true).map(Number); if(spins.length && Math.random()<0.4) parts.spin=spins[Math.floor(Math.random()*spins.length)]; }
+  }
+  if(parts.grind_slide && !(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))){ parts.grind_slide=null; }
+  if(!parts.flip && !parts.grind_slide){ parts.flip="kickflip"; parts.obstacle="flat"; }
+  return parts;
 }
-function startSession(){ total=0; attempt=1; setView("game"); els.scoreActive.textContent=fmtPts(total); nextTrick(true); }
-function nextTrick(first){ attempt=1; current=generateTrick(); const text=describe(current)||"kickflip on flat"; els.trickText.textContent=text; updateAttemptUI(); els.nextBtn.classList.add('hidden'); ['skipBtn','missBtn','landBtn'].forEach(id=>els[id].classList.remove('hidden')); }
-function settle(landed){
-  if(landed){ const rep=computeScore(current,attempt); total+=rep.final; els.scoreActive.textContent=fmtPts(total); els.nextBtn.classList.remove('hidden'); ['skipBtn','missBtn','landBtn'].forEach(id=>els[id].classList.add('hidden')); }
-  else { if(attempt<3){ attempt++; updateAttemptUI(); } else { els.nextBtn.classList.remove('hidden'); ['skipBtn','missBtn','landBtn'].forEach(id=>els[id].classList.add('hidden')); } }
+function describe(c){
+  const railish=["rail","handrail","flatbar"].includes(c.obstacle);
+  const out=[];
+  if(c.stance && c.stance!=="regular") out.push(c.stance);
+  if(c.spin) out.push(String(c.spin));
+  if(c.flip && !c.grind_slide && railish) return `${out.concat([c.flip,'over',c.obstacle]).join(' ')}`;
+  if(c.flip) out.push(c.flip);
+  if(c.grind_slide) out.push(c.grind_slide);
+  if(c.obstacle) out.push(`on ${c.obstacle}`);
+  return out.join(' ');
 }
-function endSessionOver(){ setView("over"); els.finalLeft.textContent=fmtPts(total); pushScore(total); renderHighScorePills(); }
+
+function setView(which){
+  els.viewSetup.classList.toggle('active',which==="setup"); els.viewSetup.classList.toggle('hidden',which!=="setup");
+  els.viewGame.classList.toggle('active',which==="game"); els.viewGame.classList.toggle('hidden',which!=="game");
+  els.viewOver.classList.toggle('active',which==="over"); els.viewOver.classList.toggle('hidden',which!=="over");
+}
+function resetSession(){ misses=0; total=0; attempt=1; updateLetters(); }
+function startSession(){ resetSession(); setView("game"); nextTrick(true); }
 els.startBtn.addEventListener('click', startSession);
-els.nextBtn.addEventListener('click', ()=>nextTrick(false));
-els.landBtn.addEventListener('click', ()=>settle(true));
-els.missBtn.addEventListener('click', ()=>settle(false));
-els.skipBtn.addEventListener('click', ()=>nextTrick(false));
-els.endBtn.addEventListener('click', ()=>{ $('confirmBackdrop').classList.remove('hidden'); });
-els.confirmCancel.addEventListener('click', ()=>$('confirmBackdrop').classList.add('hidden'));
-els.confirmYes.addEventListener('click', ()=>{ $('confirmBackdrop').classList.add('hidden'); endSessionOver(); });
-els.attemptPointsBtn.addEventListener('click', ()=>{
-  const rep=computeScore(current,attempt);
-  els.overlayBody.innerHTML="<h3>Attempt Score Breakdown</h3><p>Trick: "+els.trickText.textContent+"</p><p>Base: "+rep.base.toFixed(2)+" pts</p><p>Attempt x"+ATTEMPT[attempt]+" → "+rep.final.toFixed(2)+" pts</p>";
-  els.overlayBackdrop.classList.remove('hidden');
+els.restartBtn.addEventListener('click', ()=>{ setView("setup"); });
+els.endBtn.addEventListener('click', ()=>{
+  openOverlay("End session?", "<p>Are you sure you want to end this session?</p>", {primary:"Yes, end", onPrimary:()=>{ closeOverlay(); endSession(); }, secondaryText:"Cancel"});
 });
-function refreshScoreMode(){ renderHighScorePills(); els.scoreActive.textContent=fmtPts(total); }
-function renderAll(){ renderObsSummary(); renderStanceSummary(); renderTrickSummary(); renderLevelPill(); renderHighScorePills(); }
-function renderObsSummary(){ els.obsNames.textContent=(STATE.obstacles&&STATE.obstacles.length)?STATE.obstacles.join(", "):"—"; }
-function renderStanceSummary(){ const on=Object.keys(STATE.stances).filter(k=>STATE.stances[k]); els.stanceNames.textContent=on.join(", ")||"—"; }
-function renderTrickSummary(){ const cats=Object.entries(STATE.categories).filter(([k,v])=>v).map(([k])=>k).join("/"); const ef=Object.keys(STATE.flips).filter(k=>STATE.flips[k]).length; const eg=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]).length; const es=Object.keys(STATE.spins).filter(k=>STATE.spins[k]).length; els.trickSummary.textContent=(cats||"—")+" • F:"+ef+" G:"+eg+" S:"+es; }
-function renderLevelPill(){ els.levelLabel.textContent="Level: "+STATE.level+" • "+LEVEL_DESCS[STATE.level]; }
-function init(){ renderAll(); refreshScoreMode(); setView("setup"); }
+
+function updateAttemptUI(){
+  els.attemptBadge.textContent=`Attempt ${attempt}/3`;
+  els.attemptPoints.textContent=attemptText();
+}
+function nextTrick(first=false){
+  attempt=1;
+  current=generateTrick();
+  els.trickText.textContent=describe(current) || "kickflip on flat";
+  updateAttemptUI();
+  els.nextBtn.classList.add('hidden');
+  $("skipBtn").disabled=false; $("missBtn").disabled=false; $("landBtn").disabled=false;
+  $("skipBtn").classList.remove('hidden'); $("missBtn").classList.remove('hidden'); $("landBtn").classList.remove('hidden');
+}
+$("skipBtn").addEventListener('click', ()=>{ nextTrick(false); });
+$("missBtn").addEventListener('click', ()=>{
+  if(attempt<3){ attempt++; updateAttemptUI(); return; }
+  misses++; updateLetters();
+  els.nextBtn.classList.remove('hidden');
+  $("skipBtn").classList.add('hidden'); $("missBtn").classList.add('hidden'); $("landBtn").classList.add('hidden');
+});
+$("landBtn").addEventListener('click', ()=>{
+  const rep=computeScore(current,attempt);
+  total+=rep.final;
+  openOverlay("Attempt Score Breakdown", `<pre style="white-space:pre-wrap">Final: ${rep.final.toFixed(2)} pts</pre>`);
+  els.nextBtn.classList.remove('hidden');
+  $("skipBtn").classList.add('hidden'); $("missBtn").classList.add('hidden'); $("landBtn").classList.add('hidden');
+});
+els.nextBtn.addEventListener('click', ()=>{
+  if(misses>=5){ endSession(); return; }
+  closeOverlay();
+  nextTrick(false);
+});
+
+els.attemptPoints.addEventListener('click', ()=>{
+  const rep=computeScore(current,attempt);
+  openOverlay("Attempt Score Breakdown", `<pre style="white-space:pre-wrap">Final: ${rep.final.toFixed(2)} pts</pre>`);
+});
+
+function endSession(){
+  setView("over");
+  $("finalScore").textContent=total.toFixed(2);
+  addScore(STATE.nickname||"Player", total);
+  refreshHigh();
+}
+
+function renderSummaries(){
+  $("obsNames").textContent=(STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:["flat"]).join(", ");
+  $("stanceNames").textContent=Object.keys(STATE.stances).filter(k=>STATE.stances[k]).join(", ");
+  const f=Object.keys(STATE.flips).filter(k=>STATE.flips[k]).length;
+  const g=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]).length;
+  const s=Object.keys(STATE.spins).filter(k=>STATE.spins[k]).length;
+  $("trickSummary").textContent=`${Object.entries(STATE.categories).filter(([k,v])=>v).map(([k])=>k).join("/")||"—"} • F:${f} G:${g} S:${s}`;
+}
+
+function seedDemoScores(force=false){
+  if(!force && getScores().length) return;
+  const demo=[3420,3315,3290,3100,2980,2875,2700,2580,2440,2305];
+  setScores(demo.map((v,i)=>({id:String(Date.now()+i),nickname:["Jax","Leni","Christopher “Kickflip King” Thompson","Z","Nova","Kai","Rae","Amar","Jo","Ash"][i],value:v,created_at:Date.now()-i*10000})));
+}
+seedDemoScores(false);
+
+function init(){
+  renderLevel();
+  renderSummaries();
+  refreshHigh();
+  updateLetters();
+  $("titleText").addEventListener('click', ()=>location.reload());
+}
 init();
-els.overlayClose.addEventListener('click', ()=>els.overlayBackdrop.classList.add('hidden'));
-els.overlayBackdrop.addEventListener('click', (e)=>{ if(e.target===els.overlayBackdrop) els.overlayBackdrop.classList.add('hidden'); });
-els.clearCache.addEventListener('click', async ()=>{ try{ const regs = await navigator.serviceWorker.getRegistrations(); for (const r of regs) await r.unregister(); const keys = await caches.keys(); for(const k of keys) await caches.delete(k); }catch(e){ console.log(e); } location.reload(); });
-els.exportFeedback.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify({state:STATE, scores:getScores(), version:VERSION, updated:UPDATED}, null, 2)], {type:"application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'brainlock-feedback.json'; a.click(); URL.revokeObjectURL(url); });
-console.log("Brainlock loaded", VERSION, UPDATED);
+
+if('serviceWorker'in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js')); }
+console.log("Brainlock loaded", VERSION);
