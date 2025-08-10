@@ -1,74 +1,169 @@
-// Brainlock v0.5.2
-const VERSION="0.5.2";
-const DEFAULTS={level:6,categories:{flips:true,grinds:true,manuals:true,airs:true,spins:true},stances:{regular:true,fakie:true,nollie:true,switch:true},flips:{"kickflip":true,"heelflip":true,"varial kickflip":true,"varial heelflip":true,"hardflip":true,"inward heelflip":true,"bigspin flip":true,"bigspin heelflip":true,"tre flip":true,"360 flip":true,"laser flip":true},grinds:{"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"willy":true,"salad":true,"crooked":true,"overcrook":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},spins:{"180":true,"360":true,"540":true,"720":true},obstacles:["flat","ledge","rail","manual pad","quarterpipe","bank","kicker"]};
-function loadState(){try{return JSON.parse(localStorage.getItem('bl_state'))||DEFAULTS;}catch{return DEFAULTS;}}
-function saveState(s){localStorage.setItem('bl_state',JSON.stringify(s));}
-let STATE=loadState();
-const LEVEL_DESC={1:"Basics",2:"Beginner+",3:"Intermediate",4:"Strong flow",5:"Am / Local",6:"Advanced",7:"Sponsored",8:"Pro",9:"Enders",10:"Comically hard"};
-function setLevel(n){STATE.level=n;saveState(STATE);renderLevelUI();}
-function renderLevelUI(){document.getElementById('levelNum').textContent=STATE.level;document.getElementById('levelDesc').textContent=LEVEL_DESC[STATE.level];document.querySelectorAll('#levelGrid .box').forEach(n=>n.classList.toggle('active',parseInt(n.dataset.lvl,10)===STATE.level));}
-const ALL_OBS=["flat","curb","ledge","flatbar","handrail","rail","hubba","kicker","gap","stair","quarterpipe","bank","mini ramp","funbox","manual pad","box"];
-const RULES={DIRECTION_DEFAULTS:{"50-50":"frontside","5-0":"frontside","boardslide":"backside","noseslide":"backside","lipslide":"frontside","tailslide":"frontside","bluntslide":"backside","nosegrind":"frontside","crooked":"backside","willy":"backside","feeble":"backside","smith":"backside","salad":"backside","overcrook":"backside","noseblunt":"frontside"},FLIPS:["kickflip","heelflip","hardflip","inward heelflip","varial kickflip","varial heelflip","tre flip","360 flip","laser flip","bigspin flip","bigspin heelflip"],GRINDS_SLIDES:["50-50","5-0","boardslide","noseslide","tailslide","lipslide","smith","feeble","willy","salad","crooked","overcrook","nosegrind","noseblunt","bluntslide"],MANUALS:["manual","nose manual","one wheel manual"],GRIND_OK:new Set(["rail","handrail","flatbar","ledge","hubba"]),SLIDE_OK:new Set(["ledge","hubba","rail","handrail","flatbar","curb","box"]),MANUAL_OK:new Set(["manual pad","box","funbox","kicker","bank"]),AIR_OK:new Set(["flat","gap","kicker","quarterpipe","bank","stair","funbox"])};
-const BASE_POINTS={stance:{regular:0,fakie:0.05,nollie:0.15,switch:0.3},spin:{180:0.2,360:0.45,540:0.7,720:0.9},flip:{"kickflip":0.25,"heelflip":0.3,"hardflip":0.6,"inward heelflip":0.65,"varial kickflip":0.45,"varial heelflip":0.5,"tre flip":0.9,"360 flip":0.9,"laser flip":1.0,"bigspin flip":0.6,"bigspin heelflip":0.7},grind_slide:{"50-50":0.25,"5-0":0.35,"boardslide":0.35,"noseslide":0.4,"tailslide":0.45,"lipslide":0.5,"smith":0.65,"feeble":0.65,"willy":0.55,"salad":0.6,"crooked":0.65,"overcrook":0.8,"nosegrind":0.7,"noseblunt":1.0,"bluntslide":0.9},obstacle:{"flat":0,"manual pad":0.1,"box":0.1,"curb":0.15,"ledge":0.25,"hubba":0.35,"flatbar":0.35,"rail":0.5,"handrail":0.65,"gap":0.55,"kicker":0.1,"stair":0.55,"quarterpipe":0.4,"bank":0.25,"funbox":0.2,"mini ramp":0.3},manual:{"manual":0.25,"nose manual":0.35,"one wheel manual":0.6}};
-const COMBO_BONUSES={spin_plus_flip:0.25,flip_into_grind:0.3,spin_into_grind:0.2,manual_combo:0.15};
-const ATTEMPT_MULT={1:1.00,2:0.85,3:0.75};
-const HISTORY_WINDOW=7,DUPLICATE_THRESHOLD=0.82;let _recent=[];function pushRecent(c){_recent.unshift(c);if(_recent.length>HISTORY_WINDOW)_recent.pop();}
-function similarity(a,b){const keys=["stance","spin","flip","grind_slide","direction","manual","obstacle"];let same=0;for(const k of keys){if((!a[k]&&!b[k])||(a[k]&&b[k]&&String(a[k])===String(b[k])))same++;}return same/keys.length;}
-function notTooSimilar(c){for(const p of _recent){if(similarity(c,p)>=DUPLICATE_THRESHOLD)return false;}return true;}
-function pickObstacle(){const src=(STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:DEFAULTS.obstacles).filter(o=>ALL_OBS.includes(o));return src.length?src[Math.floor(Math.random()*src.length)]:"flat";}
-function isRail(ob){return["rail","handrail","flatbar"].includes(ob);}
-function allowFlip(name,s){const hi=["tre flip","360 flip","laser flip","bigspin heelflip","hardflip","inward heelflip"];const mid=["varial kickflip","varial heelflip","bigspin flip"];if(s<=1)return["kickflip","heelflip"].includes(name);if(s<=2)return!hi.includes(name)&&!mid.includes(name);if(s<=4)return!hi.includes(name);if(s===5)return name!=="laser flip";if(s===9)return!["kickflip","heelflip"].includes(name);return true;}
-function allowGrindSlide(name,s){const high=["overcrook","noseblunt","bluntslide"];if(s<=1)return["50-50","boardslide","5-0","noseslide","tailslide"].includes(name);if(s<=2)return!high.includes(name)&&!["smith","feeble","overcrook"].includes(name);if(s<=4)return!high.includes(name)||name==="overcrook";if(s===9)return high.includes(name)||["crooked","nosegrind","5-0"].includes(name);return true;}
-function allowSpin(spin,s){if(s<=2)return spin<=180;if(s<=4)return spin<=360;if(s<=7)return spin<=540;if(s===8)return spin<=720;return true;}
-function isValidCombo(c){const g=c.grind_slide,m=c.manual,ob=c.obstacle,fl=c.flip;if(g){const isSlide=["boardslide","lipslide","tailslide","noseslide","bluntslide"].includes(g);if(!ob)return false;if(isSlide&&!RULES.SLIDE_OK.has(ob))return false;if(!isSlide&&!(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))return false;}if(m){if(ob&&!RULES.MANUAL_OK.has(ob))return false;}if(fl&&!g&&!m&&ob){if(!(RULES.AIR_OK.has(ob)||isRail(ob)))return false;}return true;}
-function generateTrick(){const s=STATE.level,ob=pickObstacle();const allowFlips=STATE.categories.flips&&Object.values(STATE.flips).some(Boolean);const allowGrinds=STATE.categories.grinds&&Object.values(STATE.grinds).some(Boolean);const allowManuals=STATE.categories.manuals;const allowAirs=STATE.categories.airs;const allowSpins=STATE.categories.spins&&Object.values(STATE.spins).some(Boolean);const flipPool=allowFlips?RULES.FLIPS.filter(n=>STATE.flips[n]&&allowFlip(n,s)):[];const grindPool=allowGrinds?RULES.GRINDS_SLIDES.filter(n=>STATE.grinds[n]&&allowGrindSlide(n,s)):[];const spinPool=allowSpins?[180,360,540,720].filter(x=>STATE.spins[String(x)]&&allowSpin(x,s)):[];const manualPool=allowManuals?RULES.MANUALS:[];const canGrindish=(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))&&grindPool.length;const canManual=RULES.MANUAL_OK.has(ob)&&manualPool.length;const airish=(RULES.AIR_OK.has(ob)||isRail(ob));const patterns=[];if(flipPool.length&&airish)patterns.push("flipOnly");if(canGrindish)patterns.push("grindOnly");if(canManual)patterns.push("manualOnly");if(flipPool.length&&canGrindish)patterns.push("flipToGrind");let c=null;for(let tries=0;tries<40;tries++){const pat=patterns.length?patterns[Math.floor(Math.random()*patterns.length)]:"flipOnly";const base={stance:null,spin:null,spin_dir:null,flip:null,grind_slide:null,direction:null,manual:null,obstacle:ob};if(Math.random()<(0.08+0.04*s)){const stPool=Object.keys(STATE.stances).filter(k=>STATE.stances[k]);if(stPool.length){const pick=stPool[Math.floor(Math.random()*stPool.length)];base.stance=(pick==="regular")?null:pick;}}if(spinPool.length&&Math.random()<(0.12+0.05*s)){base.spin=spinPool[Math.floor(Math.random()*spinPool.length)];if(Math.random()<0.6)base.spin_dir=(Math.random()<0.5?"frontside":"backside");}if(pat==="flipOnly"){base.flip=flipPool[Math.floor(Math.random()*flipPool.length)]||null;}else if(pat==="grindOnly"){base.grind_slide=grindPool[Math.floor(Math.random()*grindPool.length)]||null;base.direction=RULES.DIRECTION_DEFAULTS[base.grind_slide]||"frontside";}else if(pat==="manualOnly"){base.manual=manualPool[Math.floor(Math.random()*manualPool.length)]||null;}else{base.flip=flipPool[Math.floor(Math.random()*flipPool.length)]||null;base.grind_slide=grindPool[Math.floor(Math.random()*grindPool.length)]||null;base.direction=RULES.DIRECTION_DEFAULTS[base.grind_slide]||"frontside";}if(!base.flip&&!base.grind_slide&&!base.manual){continue;}if(!isValidCombo(base))continue;if(!notTooSimilar(base))continue;c=base;break;}if(!c){return{stance:null,spin:null,spin_dir:null,flip:"kickflip",grind_slide:null,direction:null,manual:null,obstacle:RULES.AIR_OK.has(ob)?ob:"flat"};}pushRecent(c);return c;}
-function describe(c){const isRailObs=["rail","handrail","flatbar"].includes(c.obstacle);const parts=[];if(c.flip&&!c.grind_slide&&!c.manual&&isRailObs){parts.push(c.flip,"over",c.obstacle);return parts.join(" ");}if(c.stance&&c.stance!=="regular")parts.push(c.stance);if(c.spin){parts.push(c.spin_dir?`${c.spin_dir} ${c.spin}`:`${c.spin}`);}if(c.flip)parts.push(c.flip);if(c.direction&&c.grind_slide)parts.push(`${c.direction} ${c.grind_slide}`);else if(c.grind_slide)parts.push(c.grind_slide);if(c.manual)parts.push(c.manual);if(c.obstacle)parts.push(`on ${c.obstacle}`);return parts.join(" ");}
-function round(x,n){const k=Math.pow(10,n);return Math.round(x*k)/k;}
-function computeScore(c,attempt){if(!isValidCombo(c))return{valid:false,base:0,combo:1,attempt:0,final:0,breakdown:[]};let s=1.0,bd=[];const st=c.stance||"regular";s+=BASE_POINTS.stance[st]||0;bd.push(["stance",st,BASE_POINTS.stance[st]||0]);if(c.spin){s+=BASE_POINTS.spin[c.spin]||0;bd.push(["spin",c.spin,BASE_POINTS.spin[c.spin]||0]);}if(c.flip){s+=BASE_POINTS.flip[c.flip]||0;bd.push(["flip",c.flip,BASE_POINTS.flip[c.flip]||0]);}if(c.grind_slide){s+=BASE_POINTS.grind_slide[c.grind_slide]||0;bd.push(["grind_slide",c.grind_slide,BASE_POINTS.grind_slide[c.grind_slide]||0]);}if(c.manual){s+=BASE_POINTS.manual[c.manual]||0;bd.push(["manual",c.manual,BASE_POINTS.manual[c.manual]||0]);}if(c.obstacle){s+=BASE_POINTS.obstacle[c.obstacle]||0;bd.push(["obstacle",c.obstacle,BASE_POINTS.obstacle[c.obstacle]||0]);}let bonus=0;if(c.spin&&c.flip)bonus+=COMBO_BONUSES.spin_plus_flip;if(c.flip&&c.grind_slide)bonus+=COMBO_BONUSES.flip_into_grind;if(c.spin&&c.grind_slide)bonus+=COMBO_BONUSES.spin_into_grind;if(c.manual&&(c.flip||c.spin))bonus+=COMBO_BONUSES.manual_combo;s*=(1+bonus);const base=round(Math.max(s,0.1),3);const mult=ATTEMPT_MULT[attempt]||0;const final=round(base*mult,3);return{valid:true,base,combo:round(1+bonus,3),attempt:mult,final,breakdown:bd};}
-function prettyScore(rep){if(!rep.valid)return"Invalid combo for obstacle.";let lines=[`Base: ${rep.base} pts`,`Combo x${rep.combo}`,`Attempt x${rep.attempt} => Final: ${rep.final} pts`,"","Breakdown:"];for(const[k,name,pts]of rep.breakdown){lines.push(`  + ${k}:${name} = ${pts} pts`);}return lines.join("\n");}
-
-const els={titleText:document.getElementById('titleText'),settingsBtn:document.getElementById('settingsBtn'),settingsModal:document.getElementById('settingsModal'),settingsClose:document.getElementById('settingsClose'),exportFeedback:document.getElementById('exportFeedback'),clearCache:document.getElementById('clearCache'),previewTray:document.getElementById('previewTray'),collapsePreview:document.getElementById('collapsePreview'),openObs:document.getElementById('openObs'),openStances:document.getElementById('openStances'),openTricks:document.getElementById('openTricks'),obsModal:document.getElementById('obsModal'),stanceModal:document.getElementById('stanceModal'),tricksModal:document.getElementById('tricksModal'),levelModal:document.getElementById('levelModal'),attemptModal:document.getElementById('attemptModal'),endConfirm:document.getElementById('endConfirm'),obsChips:document.getElementById('obsChips'),stanceChips:document.getElementById('stanceChips'),catChips:document.getElementById('catChips'),flipsPanel:document.getElementById('flipsPanel'),grindsPanel:document.getElementById('grindsPanel'),spinsPanel:document.getElementById('spinsPanel'),manualsPanel:document.getElementById('manualsPanel'),levelGrid:document.getElementById('levelGrid'),levelInfo:document.getElementById('levelInfo'),editLevelBtn:document.getElementById('editLevelBtn'),levelNum:document.getElementById('levelNum'),levelDesc:document.getElementById('levelDesc'),sheet:document.getElementById('sheet'),viewSetup:document.getElementById('viewSetup'),viewGame:document.getElementById('viewGame'),viewOver:document.getElementById('viewOver'),startBtn:document.getElementById('startBtn'),trickBox:document.getElementById('trick'),trickText:document.getElementById('trickText'),attemptBadge:document.getElementById('attemptBadge'),attemptPtsText:document.getElementById('attemptPts'),attemptPointsBtn:document.getElementById('attemptPointsBtn'),landBtn:document.getElementById('landBtn'),missBtn:document.getElementById('missBtn'),skipBtn:document.getElementById('skipBtn'),nextBtn:document.getElementById('nextBtn'),endBtn:document.getElementById('endBtn'),finalScore:document.getElementById('finalScore'),bestScore:document.getElementById('bestScore'),restartBtn:document.getElementById('restartBtn'),letters:document.getElementById('letters'),scorelineSetup:document.getElementById('scorelineSetup'),scorelineActive:document.getElementById('scorelineActive'),highTop:document.getElementById('highTop'),scoreTop:document.getElementById('scoreTop'),obsNames:document.getElementById('obsNames'),stanceNames:document.getElementById('stanceNames'),trickSummary:document.getElementById('trickSummary')};
-els.titleText.addEventListener('click',()=>location.reload());
-els.settingsBtn.addEventListener('click',()=>els.settingsModal.classList.remove('hidden'));
-els.settingsClose.addEventListener('click',()=>els.settingsModal.classList.add('hidden'));
-els.collapsePreview.addEventListener('click',()=>{const collapsed=els.previewTray.classList.toggle('collapsed');els.collapsePreview.textContent=collapsed?'▼':'▲';els.collapsePreview.setAttribute('aria-expanded',String(!collapsed));});
-function openModal(id){document.getElementById(id).classList.remove('hidden');}
-function closeModal(id){document.getElementById(id).classList.add('hidden');}
-document.querySelectorAll('[data-close]').forEach(btn=>{btn.addEventListener('click',()=>closeModal(btn.getAttribute('data-close')));});
-els.openObs.addEventListener('click',()=>openModal('obsModal'));
-els.openStances.addEventListener('click',()=>openModal('stanceModal'));
-els.openTricks.addEventListener('click',()=>openModal('tricksModal'));
-els.editLevelBtn.addEventListener('click',()=>openModal('levelModal'));
-els.attemptPointsBtn.addEventListener('click',()=>openModal('attemptModal'));
-els.endBtn.addEventListener('click',()=>openModal('endConfirm'));
-document.getElementById('confirmEnd').addEventListener('click',()=>{closeModal('endConfirm');endSession();});
-document.getElementById('cancelEnd').addEventListener('click',()=>closeModal('endConfirm'));
-els.clearCache.addEventListener('click',async()=>{if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}location.reload();});
-function renderObsSummary(){els.obsNames.textContent=(STATE.obstacles&&STATE.obstacles.length)?STATE.obstacles.join(', '):'—';}
-function renderStanceSummary(){const on=Object.keys(STATE.stances).filter(k=>STATE.stances[k]);els.stanceNames.textContent=on.join(', ')||'—';}
-function renderTrickSummary(){const cats=Object.entries(STATE.categories).filter(([k,v])=>v).map(([k])=>k).join('/');const ef=Object.keys(STATE.flips).filter(k=>STATE.flips[k]).length;const eg=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]).length;const es=Object.keys(STATE.spins).filter(k=>STATE.spins[k]).length;els.trickSummary.textContent=`${cats||'—'} • F:${ef} G:${eg} S:${es}`;}
-function renderAllSummaries(){renderObsSummary();renderStanceSummary();renderTrickSummary();}
-renderAllSummaries();
-function renderObsChips(){els.obsChips.innerHTML=ALL_OBS.map(o=>`<button data-o="${o}" class="${STATE.obstacles.includes(o)?'active':''}">${o}</button>`).join('');els.obsChips.querySelectorAll('button').forEach(b=>{b.onclick=()=>{const o=b.dataset.o;STATE.obstacles=STATE.obstacles.includes(o)?STATE.obstacles.filter(x=>x!==o):STATE.obstacles.concat([o]);renderObsChips();renderObsSummary();saveState(STATE);};});}
-function renderStanceChips(){const keys=["regular","fakie","nollie","switch"];els.stanceChips.innerHTML=keys.map(k=>`<button data-k="${k}" class="${STATE.stances[k]?'active':''}">${k}</button>`).join('');els.stanceChips.querySelectorAll('button').forEach(b=>{b.onclick=()=>{const k=b.dataset.k;STATE.stances[k]=!STATE.stances[k];renderStanceChips();renderStanceSummary();saveState(STATE);};});}
-function labelBox(group,key,checked,enabled){const dis=enabled?"":"disabled";const id=`${group}-${key}`.replace(/\s+/g,'-');return `<label><input id="${id}" type="checkbox" data-group="${group}" data-key="${key}" ${checked?'checked':''} ${dis}/> ${key}</label>`;}
-function renderTricksPanels(){const map={"flips":"Flips","grinds":"Grinds/Slides","manuals":"Manuals","airs":"Airs","spins":"Spins"};els.catChips.innerHTML=Object.keys(map).map(k=>`<button data-k="${k}" class="${STATE.categories[k]?'active':''}">${map[k]}</button>`).join('');els.catChips.querySelectorAll('button').forEach(b=>{b.onclick=()=>{const k=b.dataset.k;STATE.categories[k]=!STATE.categories[k];if(k==="flips"){for(const t of Object.keys(STATE.flips)){STATE.flips[t]=STATE.categories[k]?STATE.flips[t]:false;}}if(k==="grinds"){for(const t of Object.keys(STATE.grinds)){STATE.grinds[t]=STATE.categories[k]?STATE.grinds[t]:false;}}if(k==="spins"){for(const t of Object.keys(STATE.spins)){STATE.spins[t]=STATE.categories[k]?STATE.spins[t]:false;}}renderTricksPanels();renderTrickSummary();saveState(STATE);};});const flipsOn=STATE.categories.flips;const grindsOn=STATE.categories.grinds;const spinsOn=STATE.categories.spins;const manualsOn=STATE.categories.manuals;els.flipsPanel.classList.toggle('hidden',!flipsOn);els.grindsPanel.classList.toggle('hidden',!grindsOn);els.spinsPanel.classList.toggle('hidden',!spinsOn);els.manualsPanel.classList.toggle('hidden',!manualsOn);els.flipsPanel.innerHTML=flipsOn?Object.keys(STATE.flips).map(n=>labelBox('flips',n,STATE.flips[n],true)).join(''):"";els.grindsPanel.innerHTML=grindsOn?Object.keys(STATE.grinds).map(n=>labelBox('grinds',n,STATE.grinds[n],true)).join(''):"";els.spinsPanel.innerHTML=spinsOn?Object.keys(STATE.spins).map(n=>labelBox('spins',n,STATE.spins[n],true)).join(''):"";els.manualsPanel.innerHTML=manualsOn?RULES.MANUALS.map(n=>labelBox('manuals',n,true,true)).join(''):"";document.querySelectorAll('#tricksModal input[type=checkbox]').forEach(cb=>{cb.onchange=()=>{const g=cb.dataset.group,k=cb.dataset.key;if(g==="manuals"){}else{STATE[g][k]=cb.checked;}renderTrickSummary();saveState(STATE);};});}
-function buildLevelGrid(){const frag=[];for(let i=1;i<=10;i++){frag.push(`<button class="box" data-lvl="${i}"><h5>Level ${i}</h5><p>${LEVEL_DESC[i]}</p></button>`);}document.getElementById('levelGrid').innerHTML=frag.join('');document.querySelectorAll('#levelGrid .box').forEach(b=>{b.onclick=()=>{setLevel(parseInt(b.dataset.lvl,10));};});renderLevelUI();}
-let misses=0,total=0,current=null,attempt=1;
-function updateLetters(){[...document.getElementById('letters').children].forEach((s,i)=>{s.classList.toggle('lost',i<misses);});}
-function resetGameState(){misses=0;total=0;attempt=1;document.getElementById('scoreTop').textContent=total.toFixed(2);updateLetters();}
-function setView(which){document.getElementById('viewSetup').classList.toggle('active',which==="setup");document.getElementById('viewSetup').classList.toggle('hidden',which!=="setup");document.getElementById('viewGame').classList.toggle('active',which==="game");document.getElementById('viewGame').classList.toggle('hidden',which!=="game");document.getElementById('viewOver').classList.toggle('active',which==="over");document.getElementById('viewOver').classList.toggle('hidden',which!=="over");document.getElementById('scorelineSetup').classList.toggle('hidden',which!=="setup");document.getElementById('scorelineActive').classList.toggle('hidden',which!=="game");}
-function updateAttemptUI(){document.getElementById('attemptBadge').textContent=`Attempt ${attempt}/3`;const rep=computeScore(current,attempt);document.getElementById('attemptPts').textContent=rep.valid?rep.final.toFixed(2):"—";document.getElementById('breakText').textContent=prettyScore(rep);}
-function nextTrick(first=false){attempt=1;for(let i=0;i<5;i++){current=generateTrick();if(current&&describe(current))break;}const text=describe(current)||"kickflip on flat";document.getElementById('trickText').textContent=text;updateAttemptUI();document.getElementById('nextBtn').classList.add('hidden');['skipBtn','missBtn','landBtn'].forEach(id=>{document.getElementById(id).disabled=false;document.getElementById(id).classList.remove('hidden');});if(!first)window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});}
-document.getElementById('startBtn').addEventListener('click',()=>{resetGameState();setView("game");nextTrick(true);});
-function settle(landed){if(landed){const rep=computeScore(current,attempt);total+=rep.final;document.getElementById('scoreTop').textContent=total.toFixed(2);document.getElementById('breakText').textContent=prettyScore(rep);document.getElementById('nextBtn').classList.remove('hidden');['skipBtn','missBtn','landBtn'].forEach(id=>{document.getElementById(id).disabled=true;document.getElementById(id).classList.add('hidden');});}else{if(attempt<3){attempt++;updateAttemptUI();}else{misses++;updateLetters();if(misses>=5){endSession();return;}document.getElementById('nextBtn').classList.remove('hidden');['skipBtn','missBtn','landBtn'].forEach(id=>{document.getElementById(id).disabled=true;document.getElementById(id).classList.add('hidden');});}}}
-document.getElementById('landBtn').addEventListener('click',()=>settle(true));
-document.getElementById('missBtn').addEventListener('click',()=>settle(false));
-document.getElementById('skipBtn').addEventListener('click',()=>{document.getElementById('nextBtn').classList.add('hidden');nextTrick(false);});
-document.getElementById('nextBtn').addEventListener('click',()=>nextTrick(false));
-function endSession(){setView("over");document.getElementById('finalScore').textContent=total.toFixed(2);const best=Math.max(total,parseFloat(localStorage.getItem('bl_best')||"0"));localStorage.setItem('bl_best',String(best));document.getElementById('bestScore').textContent=best.toFixed(2);document.getElementById('highTop').textContent=best.toFixed(2);}
-document.getElementById('restartBtn').addEventListener('click',()=>{setView("setup");});
-document.getElementById('highTop').textContent=parseFloat(localStorage.getItem('bl_best')||"0").toFixed(2);
-(function(){renderAllSummaries();renderLevelUI();buildLevelGrid();renderObsChips();renderStanceChips();renderTricksPanels();})();
-if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}
-console.log("Brainlock loaded",VERSION);
+const VERSION="0.5.3"; const UPDATED="2025-08-10";
+const DEFAULTS={"categories":{"flips":true,"grinds":true,"manuals":true,"airs":true,"spins":true},"stances":{"regular":true,"fakie":true,"nollie":true,"switch":true},"flips":{"kickflip":true,"heelflip":true,"varial kickflip":true,"varial heelflip":true,"hardflip":true,"inward heelflip":true,"bigspin flip":true,"bigspin heelflip":true,"tre flip":true,"360 flip":true,"laser flip":true},"grinds":{"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"willy":true,"salad":true,"crooked":true,"overcrook":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},"spins":{"180":true,"360":true,"540":true,"720":true},"obstacles":["flat","ledge","rail","manual pad","quarterpipe","bank","kicker"],"level":6,"nickname":""};
+function loadState(){ try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('bl_state')||"{}")); }catch{ return DEFAULTS; } }
+function saveState(s){ localStorage.setItem('bl_state', JSON.stringify(s)); }
+let STATE = loadState();
+const $ = (id)=>document.getElementById(id);
+const els = { "titleText":$('titleText'), "settingsBtn":$('settingsBtn'), "levelLabel":$('levelLabel'), "levelEdit":$('levelEdit'), "previewTray":$('previewTray'), "collapsePreview":$('collapsePreview'), "obsNames":$('obsNames'), "stanceNames":$('stanceNames'), "trickSummary":$('trickSummary'), "openObs":$('openObs'), "openStance":$('openStance'), "openTricks":$('openTricks'), "scoreModeSetup":$('scoreModeSetup'), "scoreModeActive":$('scoreModeActive'), "scoreModeOver":$('scoreModeOver'), "highScoreBtn":$('highScoreBtn'), "highScoreBtn2":$('highScoreBtn2'), "highScoreTop":$('highScoreTop'), "highScoreTop2":$('highScoreTop2'), "scoreActive":$('scoreActive'), "finalLeft":$('finalLeft'), "sheet":$('sheet'), "viewSetup":$('viewSetup'), "viewGame":$('viewGame'), "viewOver":$('viewOver'), "startBtn":$('startBtn'), "endBtn":$('endBtn'), "restartBtn":$('restartBtn'), "attemptBadge":$('attemptBadge'), "attemptPoints":$('attemptPoints'), "attemptPointsBtn":$('attemptPointsBtn'), "trickText":$('trickText'), "nextBtn":$('nextBtn'), "landBtn":$('landBtn'), "missBtn":$('missBtn'), "skipBtn":$('skipBtn'), "overlayBackdrop":$('overlayBackdrop'), "overlayBody":$('overlayBody'), "overlayClose":$('overlayClose'), "confirmBackdrop":$('confirmBackdrop'), "confirmYes":$('confirmYes'), "confirmCancel":$('confirmCancel'), "settingsModal":$('settingsModal'), "settingsClose":$('settingsClose'), "nickname":$('nickname'), "clearCache":$('clearCache'), "exportFeedback":$('exportFeedback') };
+els.titleText.addEventListener('click', ()=>location.reload());
+els.settingsBtn.addEventListener('click', ()=>{ els.settingsModal.classList.remove('hidden'); els.nickname.value=STATE.nickname||""; });
+els.settingsClose.addEventListener('click', ()=>els.settingsModal.classList.add('hidden'));
+els.nickname.addEventListener('change', ()=>{ STATE.nickname = els.nickname.value.trim(); saveState(STATE); });
+function fmtPts(n){ return (n.toFixed(2)+" pts"); }
+function setView(which){
+  els.viewSetup.classList.toggle('active', which==="setup"); els.viewSetup.classList.toggle('hidden', which!=="setup");
+  els.viewGame.classList.toggle('active', which==="game"); els.viewGame.classList.toggle('hidden', which!=="game");
+  els.viewOver.classList.toggle('active', which==="over"); els.viewOver.classList.toggle('hidden', which!=="over");
+  els.scoreModeSetup.classList.toggle('hidden', which!=="setup");
+  els.scoreModeActive.classList.toggle('hidden', which!=="game");
+  els.scoreModeOver.classList.toggle('hidden', which!=="over");
+}
+function getScores(){ try{ return JSON.parse(localStorage.getItem('bl_scores')||"[]"); }catch{ return []; } }
+function pushScore(score){
+  const list = getScores();
+  list.push({score, name:STATE.nickname||"Guest", when:Date.now()});
+  list.sort((a,b)=>b.score-a.score); localStorage.setItem('bl_scores', JSON.stringify(list.slice(0,50)));
+}
+function bestScore(){ const l=getScores(); return l.length? l[0].score : 0; }
+function renderHighScorePills(){ const best=bestScore(); els.highScoreTop.textContent=fmtPts(best); els.highScoreTop2.textContent=fmtPts(best); }
+function openHighScores(){
+  const list=getScores().slice(0,10);
+  const rows=list.map((r,i)=>"<div style='display:flex;justify-content:space-between'><div>#"+(i+1)+" — "+r.name+"</div><div>"+fmtPts(r.score)+"</div></div>").join('');
+  els.overlayBody.innerHTML = "<h3>Top 10 High Scores</h3>"+(rows||"<p class='muted'>No scores yet.</p>");
+  els.overlayBackdrop.classList.remove('hidden');
+}
+els.highScoreBtn.addEventListener('click', openHighScores);
+els.highScoreBtn2.addEventListener('click', openHighScores);
+function openOverlayFor(kind){
+  if (kind==="obstacles"){
+    const all=["flat","curb","ledge","flatbar","handrail","rail","hubba","kicker","gap","stair","quarterpipe","bank","mini ramp","funbox","manual pad","box"];
+    els.overlayBody.innerHTML="<h3>Obstacles</h3><div class='chips'>"+all.map(o=>"<button data-o='"+o+"' class='"+(STATE.obstacles.includes(o)?"active":"")+"'>"+o+"</button>").join('')+"</div>";
+    els.overlayBackdrop.classList.remove('hidden');
+    els.overlayBody.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>{ const o=b.dataset.o; STATE.obstacles=STATE.obstacles.includes(o)?STATE.obstacles.filter(x=>x!==o):STATE.obstacles.concat([o]); renderObsSummary(); saveState(STATE); b.classList.toggle('active'); });
+  }
+  if (kind==="stances"){
+    const keys=["regular","fakie","nollie","switch"];
+    els.overlayBody.innerHTML="<h3>Stances</h3><div class='chips'>"+keys.map(k=>"<button data-k='"+k+"' class='"+(STATE.stances[k]?"active":"")+"'>"+k+"</button>").join('')+"</div>";
+    els.overlayBackdrop.classList.remove('hidden');
+    els.overlayBody.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{ const k=b.dataset.k; STATE.stances[k]=!STATE.stances[k]; renderStanceSummary(); saveState(STATE); b.classList.toggle('active'); });
+  }
+  if (kind==="tricks"){
+    function section(name,key,items){
+      const enabled=STATE.categories[key];
+      const chips = items.map(it=>"<label><input type='checkbox' data-group='"+key+"' data-key='"+it+"' "+(STATE[key][it]?"checked":"")+" "+(enabled?"":"disabled")+"/> "+it+"</label>").join('');
+      return "<div class='list-item'><h4>"+name+"</h4><div class='chips'><button data-cat='"+key+"' class='"+(enabled?"active":"")+"'>"+(enabled?"On":"Off")+"</button></div><div class='panel'>"+chips+"</div></div>";
+    }
+    const flips=Object.keys(STATE.flips), grinds=Object.keys(STATE.grinds), spins=Object.keys(STATE.spins);
+    els.overlayBody.innerHTML="<h3>Tricks</h3>"+section("Flips","flips",flips)+section("Grinds/Slides","grinds",grinds)+section("Spins","spins",spins);
+    els.overlayBackdrop.classList.remove('hidden');
+    els.overlayBody.querySelectorAll('button[data-cat]').forEach(b=>b.onclick=()=>{ const k=b.dataset.cat; STATE.categories[k]=!STATE.categories[k]; saveState(STATE); openOverlayFor("tricks"); renderTrickSummary(); });
+    els.overlayBody.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{ const g=cb.dataset.group, k=cb.dataset.key; STATE[g][k]=cb.checked; saveState(STATE); renderTrickSummary(); });
+  }
+}
+els.openObs.addEventListener('click', ()=>openOverlayFor("obstacles"));
+els.openStance.addEventListener('click', ()=>openOverlayFor("stances"));
+els.openTricks.addEventListener('click', ()=>openOverlayFor("tricks"));
+els.overlayClose.addEventListener('click', ()=>els.overlayBackdrop.classList.add('hidden'));
+els.overlayBackdrop.addEventListener('click', (e)=>{ if(e.target===els.overlayBackdrop) els.overlayBackdrop.classList.add('hidden'); });
+const LEVEL_DESCS={1:"Basics",2:"Beginner",3:"Comfortable",4:"Intermediate",5:"Strong",6:"Sponsored",7:"Semi‑Pro",8:"Pro",9:"Enders",10:"Comically hard"};
+function openLevelOverlay(){
+  const grid = Array.from({length:10}, (_,i)=>i+1).map(n=>"<button data-l='"+n+"' class='ghost level-box "+(STATE.level===n?"active":"")+"'>"+n+"<div class='muted' style='font-size:12px'>"+LEVEL_DESCS[n]+"</div></button>").join('');
+  els.overlayBody.innerHTML = "<h3>Difficulty</h3><div class='level-grid'>"+grid+"</div>";
+  els.overlayBackdrop.classList.remove('hidden');
+  els.overlayBody.querySelectorAll('button[data-l]').forEach(b=>b.onclick=()=>{ STATE.level=parseInt(b.dataset.l,10); saveState(STATE); renderLevelPill(); els.overlayBackdrop.classList.add('hidden'); });
+}
+els.levelEdit.addEventListener('click', openLevelOverlay);
+els.collapsePreview.addEventListener('click', ()=>{ const c=els.previewTray.classList.toggle('collapsed'); els.collapsePreview.textContent=c?'▼':'▲'; });
+function renderObsSummary(){ els.obsNames.textContent=(STATE.obstacles&&STATE.obstacles.length)?STATE.obstacles.join(", "):"—"; }
+function renderStanceSummary(){ const on=Object.keys(STATE.stances).filter(k=>STATE.stances[k]); els.stanceNames.textContent=on.join(", ")||"—"; }
+function renderTrickSummary(){ const cats=Object.entries(STATE.categories).filter(([k,v])=>v).map(([k])=>k).join("/"); const ef=Object.keys(STATE.flips).filter(k=>STATE.flips[k]).length; const eg=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]).length; const es=Object.keys(STATE.spins).filter(k=>STATE.spins[k]).length; els.trickSummary.textContent=(cats||"—")+" • F:"+ef+" G:"+eg+" S:"+es; }
+function renderLevelPill(){ els.levelLabel.textContent = "Level: "+STATE.level+" • "+LEVEL_DESCS[STATE.level]; }
+function renderAll(){ renderObsSummary(); renderStanceSummary(); renderTrickSummary(); renderLevelPill(); renderHighScorePills(); }
+renderAll();
+const RULES={ "GRIND_OK":new Set(["rail","handrail","flatbar","ledge","hubba"]), "SLIDE_OK":new Set(["ledge","hubba","rail","handrail","flatbar","curb","box"]), "MANUAL_OK":new Set(["manual pad","box","funbox","kicker","bank"]), "AIR_OK":new Set(["flat","gap","kicker","quarterpipe","bank","stair","funbox"]) };
+function pickObstacle(){ const src=(STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:DEFAULTS.obstacles); return src[Math.floor(Math.random()*src.length)]||"flat"; }
+function generateTrick(){
+  const ob=pickObstacle();
+  const allowFlips=STATE.categories.flips && Object.values(STATE.flips).some(Boolean);
+  const allowGrinds=STATE.categories.grinds && Object.values(STATE.grinds).some(Boolean);
+  const allowManuals=STATE.categories.manuals;
+  const patterns=[];
+  if (allowGrinds && (RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))) patterns.push('grindOnly');
+  if (allowManuals && RULES.MANUAL_OK.has(ob)) patterns.push('manualOnly');
+  if (allowFlips && (RULES.AIR_OK.has(ob)||["rail","handrail","flatbar"].includes(ob))) patterns.push('flipOnly');
+  if (allowFlips && allowGrinds && (RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))) patterns.push('flipToGrind');
+  let pat = patterns[Math.floor(Math.random()*patterns.length)];
+  function randKey(obj){ const keys=Object.keys(obj).filter(k=>obj[k]); return keys[Math.floor(Math.random()*keys.length)]; }
+  let res=null;
+  for(let i=0;i<20;i++){
+    if(!pat) break;
+    if(pat==='flipOnly'){ const flip=randKey(STATE.flips)||"kickflip"; res={flip, obstacle:ob}; break; }
+    if(pat==='grindOnly'){ const pool=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]); const g=pool[Math.floor(Math.random()*pool.length)]||"50-50"; res={grind_slide:g, obstacle:ob, direction:"frontside"}; break; }
+    if(pat==='manualOnly'){ res={manual:"manual", obstacle:ob}; break; }
+    if(pat==='flipToGrind'){ const flip=randKey(STATE.flips)||"kickflip"; const pool=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]); const g=pool[Math.floor(Math.random()*pool.length)]||"50-50"; res={flip, grind_slide:g, obstacle:ob, direction:"frontside"}; break; }
+  }
+  if(!res) res={flip:"kickflip", obstacle: RULES.AIR_OK.has(ob)?ob:"flat"};
+  return res;
+}
+function describe(c){
+  const rail=["rail","handrail","flatbar"].includes(c.obstacle);
+  if(c.flip && !c.grind_slide && !c.manual && rail) return c.flip+" over "+c.obstacle;
+  const parts=[];
+  if(c.flip) parts.push(c.flip);
+  if(c.direction && c.grind_slide) parts.push(c.direction+" "+c.grind_slide); else if(c.grind_slide) parts.push(c.grind_slide);
+  if(c.manual) parts.push(c.manual);
+  if(c.obstacle) parts.push("on "+c.obstacle);
+  return parts.join(" ");
+}
+const BASE={ "flip":{"kickflip":0.3,"heelflip":0.35,"varial kickflip":0.45,"varial heelflip":0.5,"hardflip":0.55,"inward heelflip":0.6,"tre flip":0.8,"360 flip":0.8,"laser flip":0.85,"bigspin flip":0.6,"bigspin heelflip":0.65}, "grind_slide":{"50-50":0.3,"5-0":0.4,"boardslide":0.4,"noseslide":0.45,"tailslide":0.5,"lipslide":0.55,"smith":0.65,"feeble":0.65,"willy":0.55,"salad":0.6,"crooked":0.65,"overcrook":0.75,"nosegrind":0.7,"noseblunt":0.9,"bluntslide":0.85}, "manual":{"manual":0.25,"nose manual":0.35,"one wheel manual":0.6}, "obstacle":{"flat":0,"manual pad":0.1,"box":0.1,"curb":0.15,"ledge":0.25,"hubba":0.35,"flatbar":0.35,"rail":0.45,"handrail":0.55,"gap":0.5,"kicker":0.1,"stair":0.45,"quarterpipe":0.4,"bank":0.25,"funbox":0.2,"mini ramp":0.3} };
+const BONUS={ "flip_to_grind":0.3 }, ATTEMPT={1:1.00,2:0.85,3:0.75};
+function computeScore(c,a){
+  let s=1.0;
+  if(c.flip) s+=BASE.flip[c.flip]||0;
+  if(c.grind_slide) s+=BASE.grind_slide[c.grind_slide]||0;
+  if(c.manual) s+=BASE.manual[c.manual]||0;
+  if(c.obstacle) s+=BASE.obstacle[c.obstacle]||0;
+  if(c.flip && c.grind_slide) s*=(1+BONUS.flip_to_grind);
+  const mult=ATTEMPT[a]||0;
+  const base=Math.max(s,0.1);
+  return {base, final:base*mult};
+}
+let current=null, attempt=1, total=0;
+function updateAttemptUI(){
+  els.attemptBadge.textContent="Attempt "+attempt+"/3";
+  const rep=computeScore(current,attempt);
+  els.attemptPoints.textContent=fmtPts(rep.final);
+}
+function startSession(){ total=0; attempt=1; setView("game"); els.scoreActive.textContent=fmtPts(total); nextTrick(true); }
+function nextTrick(first){ attempt=1; current=generateTrick(); const text=describe(current)||"kickflip on flat"; els.trickText.textContent=text; updateAttemptUI(); els.nextBtn.classList.add('hidden'); ['skipBtn','missBtn','landBtn'].forEach(id=>els[id].classList.remove('hidden')); }
+function settle(landed){
+  if(landed){ const rep=computeScore(current,attempt); total+=rep.final; els.scoreActive.textContent=fmtPts(total); els.nextBtn.classList.remove('hidden'); ['skipBtn','missBtn','landBtn'].forEach(id=>els[id].classList.add('hidden')); }
+  else { if(attempt<3){ attempt++; updateAttemptUI(); } else { els.nextBtn.classList.remove('hidden'); ['skipBtn','missBtn','landBtn'].forEach(id=>els[id].classList.add('hidden')); } }
+}
+function endSessionOver(){ setView("over"); els.finalLeft.textContent=fmtPts(total); pushScore(total); renderHighScorePills(); }
+els.startBtn.addEventListener('click', startSession);
+els.nextBtn.addEventListener('click', ()=>nextTrick(false));
+els.landBtn.addEventListener('click', ()=>settle(true));
+els.missBtn.addEventListener('click', ()=>settle(false));
+els.skipBtn.addEventListener('click', ()=>nextTrick(false));
+els.endBtn.addEventListener('click', ()=>{ $('confirmBackdrop').classList.remove('hidden'); });
+els.confirmCancel.addEventListener('click', ()=>$('confirmBackdrop').classList.add('hidden'));
+els.confirmYes.addEventListener('click', ()=>{ $('confirmBackdrop').classList.add('hidden'); endSessionOver(); });
+els.attemptPointsBtn.addEventListener('click', ()=>{
+  const rep=computeScore(current,attempt);
+  els.overlayBody.innerHTML="<h3>Attempt Score Breakdown</h3><p>Trick: "+els.trickText.textContent+"</p><p>Base: "+rep.base.toFixed(2)+" pts</p><p>Attempt x"+ATTEMPT[attempt]+" → "+rep.final.toFixed(2)+" pts</p>";
+  els.overlayBackdrop.classList.remove('hidden');
+});
+function refreshScoreMode(){ renderHighScorePills(); els.scoreActive.textContent=fmtPts(total); }
+function renderAll(){ renderObsSummary(); renderStanceSummary(); renderTrickSummary(); renderLevelPill(); renderHighScorePills(); }
+function renderObsSummary(){ els.obsNames.textContent=(STATE.obstacles&&STATE.obstacles.length)?STATE.obstacles.join(", "):"—"; }
+function renderStanceSummary(){ const on=Object.keys(STATE.stances).filter(k=>STATE.stances[k]); els.stanceNames.textContent=on.join(", ")||"—"; }
+function renderTrickSummary(){ const cats=Object.entries(STATE.categories).filter(([k,v])=>v).map(([k])=>k).join("/"); const ef=Object.keys(STATE.flips).filter(k=>STATE.flips[k]).length; const eg=Object.keys(STATE.grinds).filter(k=>STATE.grinds[k]).length; const es=Object.keys(STATE.spins).filter(k=>STATE.spins[k]).length; els.trickSummary.textContent=(cats||"—")+" • F:"+ef+" G:"+eg+" S:"+es; }
+function renderLevelPill(){ els.levelLabel.textContent="Level: "+STATE.level+" • "+LEVEL_DESCS[STATE.level]; }
+function init(){ renderAll(); refreshScoreMode(); setView("setup"); }
+init();
+els.overlayClose.addEventListener('click', ()=>els.overlayBackdrop.classList.add('hidden'));
+els.overlayBackdrop.addEventListener('click', (e)=>{ if(e.target===els.overlayBackdrop) els.overlayBackdrop.classList.add('hidden'); });
+els.clearCache.addEventListener('click', async ()=>{ try{ const regs = await navigator.serviceWorker.getRegistrations(); for (const r of regs) await r.unregister(); const keys = await caches.keys(); for(const k of keys) await caches.delete(k); }catch(e){ console.log(e); } location.reload(); });
+els.exportFeedback.addEventListener('click', ()=>{ const blob = new Blob([JSON.stringify({state:STATE, scores:getScores(), version:VERSION, updated:UPDATED}, null, 2)], {type:"application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'brainlock-feedback.json'; a.click(); URL.revokeObjectURL(url); });
+console.log("Brainlock loaded", VERSION, UPDATED);

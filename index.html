@@ -14,51 +14,58 @@
     <header class="topbar">
       <h1 id="titleText" class="brand-left" aria-label="Brainlock Skateboard Game">Brainlock Skateboard Game</h1>
       <button id="settingsBtn" class="ghost icon" aria-label="Settings">⚙️</button>
-      <div class="top-actions">
-        <div class="level-bar">
-          <div id="levelInfo" class="level-pill">Level: <span id="levelNum">6</span> <span class="muted">•</span> <span id="levelDesc">Advanced</span></div>
-          <button id="editLevelBtn" class="ghost sm">Edit</button>
-        </div>
-      </div>
     </header>
 
+    <!-- Level pill (always visible) + Edit -->
+    <section class="level-bar">
+      <div class="level-pill">
+        <span id="levelLabel">Level: 6 • Sponsored</span>
+        <button id="levelEdit" class="ghost sm">Edit</button>
+      </div>
+    </section>
+
+    <!-- Game options tray (swapped placement: sits where edit used to be under title) -->
     <section class="preview-tray" id="previewTray">
       <div class="tray-head">
-        <span class="muted label">Game options</span>
+        <span class="tray-title">Game options</span>
         <button id="collapsePreview" class="collapse-btn" aria-expanded="true" aria-label="Toggle game options">▲</button>
       </div>
       <div class="preview-grid">
-        <button id="openObs" class="status-pill as-btn">Obstacles: <span id="obsNames">—</span></button>
-        <button id="openStances" class="status-pill as-btn">Stances: <span id="stanceNames">—</span></button>
-        <button id="openTricks" class="status-pill as-btn">Tricks: <span id="trickSummary">—</span></button>
+        <div class="status-pill">Obstacles: <span id="obsNames">—</span> <button id="openObs" class="link">Edit</button></div>
+        <div class="status-pill">Stances: <span id="stanceNames">—</span> <button id="openStance" class="link">Edit</button></div>
+        <div class="status-pill">Tricks: <span id="trickSummary">—</span> <button id="openTricks" class="link">Edit</button></div>
+      </div>
+    </section>
+
+    <!-- Score strip -->
+    <section class="status-strip" id="scoreStrip">
+      <div class="status-pill" id="scoreModeSetup">High Score: <button id="highScoreBtn" class="link score-link"><span id="highScoreTop">0.00 pts</span></button></div>
+      <div class="status-pill hidden" id="scoreModeActive">Total Score: <span id="scoreActive">0.00 pts</span></div>
+      <div class="status-pill hidden" id="scoreModeOver">
+        <span>Final: <span id="finalLeft">0.00 pts</span></span>
+        <span style="margin-left:12px">High: <button id="highScoreBtn2" class="link score-link"><span id="highScoreTop2">0.00 pts</span></button></span>
       </div>
     </section>
 
     <main id="screen">
       <section class="card sheet" id="sheet">
-        <div class="sheet-header">
-          <div id="letters" class="letters-sheet" aria-hidden="false">
-            <span>S</span><span>K</span><span>A</span><span>T</span><span>E</span>
-          </div>
-          <div class="scoreline setup" id="scorelineSetup">High Score: <span id="highTop">0.00</span> pts</div>
-          <div class="scoreline active hidden" id="scorelineActive">Total Score: <span id="scoreTop">0.00</span> pts</div>
-        </div>
-
+        <!-- View: Setup -->
         <div id="viewSetup" class="view active">
           <div class="hero-emoji" aria-hidden="true">🧠 🔒 🛹</div>
           <button id="startBtn" class="primary xl full start-cta">Start Session</button>
         </div>
 
+        <!-- View: Game -->
         <div id="viewGame" class="view hidden" aria-live="polite">
-          <div id="trick" class="trick bigtitle">
+          <div id="trick" class="trick bigtitle focus">
             <div class="trick-topline">
               <span id="attemptBadge" class="badge">Attempt 1/3</span>
-              <button id="attemptPointsBtn" class="badge right linkish">This attempt: <span id="attemptPts">0.00</span> pts</button>
+              <button id="attemptPointsBtn" class="badge right linklike">This attempt: <span id="attemptPoints">0.00 pts</span></button>
             </div>
             <div id="trickText">—</div>
           </div>
 
-          <div class="actions right" id="actionRow">
+          <div class="actions right">
             <button id="skipBtn" class="ghost xl">Skip</button>
             <button id="missBtn" class="danger xl">Miss</button>
             <button id="landBtn" class="success xl">Land</button>
@@ -66,105 +73,71 @@
           </div>
 
           <div class="sheet-actions left">
-            <button id="endBtn" class="ghost lg danger-outline">End Session</button>
+            <button id="endBtn" class="ghost lg no-red">End Session</button>
           </div>
         </div>
 
+        <!-- View: Over -->
         <div id="viewOver" class="view hidden">
           <div class="hero-emoji" aria-hidden="true">🧠 🔒 🛹</div>
-          <div class="row space">
-            <div class="big">Final: <span id="finalScore">0.00</span> pts</div>
-            <div class="big right">High: <span id="bestScore">0.00</span> pts</div>
-          </div>
           <button id="restartBtn" class="primary xl full">New Session</button>
         </div>
       </section>
     </main>
 
-    <footer class="foot">v0.5.2</footer>
+    <footer class="foot">v0.5.3</footer>
   </div>
 
+  <!-- Overlays -->
+  <div id="overlayBackdrop" class="overlay hidden">
+    <div class="overlay-card" role="dialog" aria-modal="true">
+      <div class="overlay-body" id="overlayBody"></div>
+      <div class="overlay-actions">
+        <button id="overlayClose" class="ghost full">X</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm End Session -->
+  <div id="confirmBackdrop" class="overlay hidden">
+    <div class="overlay-card" role="dialog" aria-modal="true">
+      <div class="overlay-body">
+        <h3>End session?</h3>
+        <p>Are you sure you want to end this session early?</p>
+      </div>
+      <div class="overlay-actions split">
+        <button id="confirmYes" class="danger">Yes, end</button>
+        <button id="confirmCancel" class="ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal (About & Tools only) -->
   <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <div class="modal-header">
         <h3 id="settingsTitle">Settings</h3>
+        <button id="settingsClose" class="ghost icon" aria-label="Close">✕</button>
       </div>
-      <div id="aboutPane" class="pane active">
-        <h4>About & Tools</h4>
-        <div class="toolrow">
-          <button id="exportFeedback" class="ghost lg">Export Feedback</button>
-          <button id="clearCache" class="ghost lg">Clear Cache & Reload</button>
+      <div class="pane active">
+        <div class="list">
+          <div class="list-item">
+            <h4>Game Rules</h4>
+            <p class="muted">Land tricks to avoid letters in SKATE. 5 letters ends the session. Points scale with difficulty; combos earn bonuses. Attempts reduce points: 1st 1.00×, 2nd 0.85×, 3rd 0.75×.</p>
+          </div>
+          <div class="list-item">
+            <h4>Nickname</h4>
+            <input id="nickname" class="input" placeholder="Enter nickname" />
+          </div>
+          <div class="list-item">
+            <h4>About & Tools</h4>
+            <div class="toolrow">
+              <button id="exportFeedback" class="ghost lg">Export Feedback</button>
+              <button id="clearCache" class="ghost lg">Clear Cache & Reload</button>
+            </div>
+            <p class="muted">Version: v0.5.3 • Updated: 2025-08-10</p>
+          </div>
         </div>
-        <div class="overlay-footer">
-          <button id="settingsClose" class="ghost">X</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="levelModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>Difficulty</h3></div>
-      <div class="pane active">
-        <div id="levelGrid" class="level-grid"></div>
-      </div>
-      <div class="overlay-footer"><button data-close="levelModal" class="ghost">X</button></div>
-    </div>
-  </div>
-
-  <div id="obsModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>Obstacles</h3></div>
-      <div class="pane active">
-        <div id="obsChips" class="chips"></div>
-      </div>
-      <div class="overlay-footer"><button data-close="obsModal" class="ghost">X</button></div>
-    </div>
-  </div>
-
-  <div id="stanceModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>Stances</h3></div>
-      <div class="pane active">
-        <div id="stanceChips" class="chips"></div>
-      </div>
-      <div class="overlay-footer"><button data-close="stanceModal" class="ghost">X</button></div>
-    </div>
-  </div>
-
-  <div id="tricksModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>Tricks</h3></div>
-      <div class="pane active">
-        <div class="chips subtle" id="catChips"></div>
-        <div id="granularWrap">
-          <div id="flipsPanel" class="subpanel hidden"></div>
-          <div id="grindsPanel" class="subpanel hidden"></div>
-          <div id="spinsPanel" class="subpanel hidden"></div>
-          <div id="manualsPanel" class="subpanel hidden"></div>
-        </div>
-      </div>
-      <div class="overlay-footer"><button data-close="tricksModal" class="ghost">X</button></div>
-    </div>
-  </div>
-
-  <div id="attemptModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>Attempt Score Breakdown</h3></div>
-      <div class="pane active"><pre id="breakText"></pre></div>
-      <div class="overlay-footer"><button data-close="attemptModal" class="ghost">X</button></div>
-    </div>
-  </div>
-
-  <div id="endConfirm" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>End session early?</h3></div>
-      <div class="pane active">
-        <p class="muted">Your progress this run will be saved to High if it beats your best.</p>
-      </div>
-      <div class="overlay-footer row gap">
-        <button id="confirmEnd" class="danger">Yes, end</button>
-        <button id="cancelEnd" class="ghost">Cancel</button>
       </div>
     </div>
   </div>
