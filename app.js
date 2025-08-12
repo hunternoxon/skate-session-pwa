@@ -1,4 +1,4 @@
-const VERSION="0.5.7";
+const VERSION="0.5.7b";
 const DEFAULTS={level:6,categories:{flips:true,grinds:true,manuals:true,airs:true,spins:true},stances:{regular:true,switch:true,nollie:true,fakie:true},
 flips:{"kickflip":true,"heelflip":true,"varial kickflip":true,"hardflip":true,"tre flip":true,"360 flip":true,"laser flip":true,"inward heelflip":true,"bigspin flip":true},
 grinds:{"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"crooked":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},
@@ -11,6 +11,17 @@ function getScores(){try{return JSON.parse(localStorage.getItem('bl_scores')||"[
 function setScores(a){localStorage.setItem('bl_scores',JSON.stringify(a))}
 function bestScore(){const s=getScores();return s.length?Math.max(...s.map(x=>x.value)):0}
 function isAdmin(){return localStorage.getItem('bl_admin')==="1"}function setAdmin(on){localStorage.setItem('bl_admin',on?"1":"0")}
+// 0.5.7b safe-boot markers + error banner
+window.__blSafeBoot = true;
+document.documentElement.classList.add('js-ok');
+window.onerror = function(msg, src, line, col, err){
+  const b = document.getElementById('errBanner');
+  if(!b) return;
+  b.classList.remove('hidden');
+  b.textContent = 'JS Error: ' + msg + ' @ ' + (src||'inline') + ':' + line;
+  document.documentElement.classList.remove('js-ok');
+};
+
 
 const $=id=>document.getElementById(id);
 const els={title:$('titleText'),settingsBtn:$('settingsBtn'),levelPill:$('levelPill'),levelVal:$('levelVal'),levelDesc:$('levelDesc'),editLevel:$('editLevel'),
@@ -251,5 +262,6 @@ renderLevel();renderSummaries();setView("setup");updateLetters();
 });
 
 
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}
+// SW disabled in 0.5.7b safe-mode to avoid stale cache issues
+/* if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))} */
 console.log("Brainlock loaded",VERSION);

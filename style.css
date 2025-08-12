@@ -69,3 +69,12 @@ input[type="text"], input[type="search"], input[type="number"], input[type="pass
 .list .sub label { font-size:14px; font-weight:600; background:#0e0f11; border:1px solid #1f2024; border-radius:10px; padding:8px 8px; }
 
 .modal.hidden{display:none!important;pointer-events:none!important}
+
+
+/* 0.5.7b safe-mode additions */
+.modal.hidden{display:none!important;pointer-events:none!important}
+.err-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fff;padding:8px 12px;font-weight:700}
+.js-ok .err-banner{display:none}
+.hidden{display:none!important}
+button, .link, .ghost, .primary, .success, .danger { pointer-events:auto; }
+.sheet, .topbar, .gameopts { pointer-events:auto; }
