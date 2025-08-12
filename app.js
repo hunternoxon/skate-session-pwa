@@ -244,6 +244,12 @@ els.confirmYes.addEventListener('click',()=>{hideModal(els.confirm);endSession()
 els.restartBtn.addEventListener('click',()=>setView("setup"));
 
 renderLevel();renderSummaries();setView("setup");updateLetters();
+// v0.5.7a: force-hide all modals at boot to avoid any invisible overlay blocking taps
+;['overlay','confirm','settings'].forEach(id=>{
+  const m=document.getElementById(id);
+  if(m){ m.classList.add('hidden'); m.setAttribute('aria-hidden','true'); }
+});
+
 
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}
 console.log("Brainlock loaded",VERSION);
