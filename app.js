@@ -68,7 +68,7 @@ function buildTricksOverlay(){
   const cats=[["flips","Flips"],["grinds","Grinds/Slides"],["spins","Spins"],["manuals","Manuals"],["airs","Airs"]];
   let html='<div class="list">';
   for(const [k,label] of cats){
-    html+=`<label><input type="checkbox" data-cat="${k}" ${STATE.categories[k]?"checked":""}/> ${label}</label>`;
+    html+=`<label class="cat"><input class="cat" type="checkbox" data-cat="${k}" ${STATE.categories[k]?"checked":""}/> ${label}</label>`;
     if(STATE.categories[k]){
       if(k==="flips"){ html+='<div class="list sub">'; for(const n of Object.keys(STATE.flips)){html+=`<label><input type="checkbox" data-flip="${n}" ${STATE.flips[n]?"checked":""}/> ${n}</label>`} html+='</div>'; }
       if(k==="grinds"){ html+='<div class="list sub">'; for(const n of Object.keys(STATE.grinds)){html+=`<label><input type="checkbox" data-grind="${n}" ${STATE.grinds[n]?"checked":""}/> ${n}</label>`} html+='</div>'; }
