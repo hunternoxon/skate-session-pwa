@@ -45,6 +45,12 @@ function hideModal(node){node.classList.add('hidden');node.setAttribute('aria-hi
 function openOverlay(title,html){els.modalTitle.textContent=title;els.modalBody.innerHTML=html;showModal(els.overlay)}
 function closeOverlay(){hideModal(els.overlay)} els.modalClose.addEventListener('click',closeOverlay)
 
+function setNextVisible(on){
+  els.nextBtn.classList.toggle('hidden', !on);
+  [els.skipBtn, els.missBtn, els.landBtn].forEach(b=> b.classList.toggle('hidden', on));
+}
+
+
 function buildObsOverlay(){
   const all=["flat","curb","ledge","rail","handrail","flatbar","hubba","manual pad","box","kicker","gap","bank","quarterpipe","stair","funbox"];
   const set=new Set(STATE.obstacles||[]); let html='<div class="list">';
@@ -182,13 +188,13 @@ function updateLetters(){[...els.letters.children].forEach((s,i)=>s.classList.to
 function startSession(){misses=0;total=0;attempt=1;updateLetters();setView("game");nextTrick(true)}
 els.startBtn.addEventListener('click',startSession);
 
-function nextTrick(){attempt=1;current=generateTrick();els.trickText.textContent=describe(current)||"kickflip on flat";updateAttemptUI();els.nextBtn.classList.add('hidden');els.skipBtn.disabled=false;els.missBtn.disabled=false;els.landBtn.disabled=false;els.scoreLine.textContent='Total Score: '+total+' pts'}
+function nextTrick(){attempt=1;current=generateTrick();els.trickText.textContent=describe(current)||"kickflip on flat";updateAttemptUI();setNextVisible(false);els.skipBtn.disabled=false;els.missBtn.disabled=false;els.landBtn.disabled=false;els.scoreLine.textContent='Total Score: '+total+' pts'}
 function updateAttemptUI(){els.attemptBadge.textContent=`Attempt ${attempt}/3`;const rep=computeScore(current,attempt);els.openAttempt.textContent=`This attempt: ${rep.final} pts`}
 els.openAttempt.addEventListener('click',()=>{const rep=computeScore(current,attempt);let lines=`Base: ${rep.base} \nCombo x${(1+rep.bonus).toFixed(2)} \nAttempt x${rep.mult} => Final: ${rep.final} pts \n\nBreakdown:\n`;for(const [k,n,p] of rep.breakdown){lines+=` + ${k}: ${n} = ${p}\n`} openOverlay("Attempt Score Breakdown",`<pre>${lines}</pre>`)});
 
 function settle(hit){
-  if(hit){const rep=computeScore(current,attempt);total=+(total+rep.final).toFixed(2);els.scoreLine.textContent='Total Score: '+total+' pts';els.nextBtn.classList.remove('hidden');els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}
-  else{if(attempt<3){attempt++;updateAttemptUI()}else{misses++;updateLetters();if(misses>=5){endSession();return}els.nextBtn.classList.remove('hidden');els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}}
+  if(hit){const rep=computeScore(current,attempt);total=+(total+rep.final).toFixed(2);els.scoreLine.textContent='Total Score: '+total+' pts';setNextVisible(true);els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}
+  else{if(attempt<3){attempt++;updateAttemptUI()}else{misses++;updateLetters();if(misses>=5){endSession();return}setNextVisible(true);els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}}
 }
 els.landBtn.addEventListener('click',()=>settle(true));
 els.missBtn.addEventListener('click',()=>settle(false));
