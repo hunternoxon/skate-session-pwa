@@ -44,12 +44,7 @@ function hideModal(node){node.classList.add('hidden');node.setAttribute('aria-hi
 
 function openOverlay(title,html){els.modalTitle.textContent=title;els.modalBody.innerHTML=html;showModal(els.overlay)}
 function closeOverlay(){hideModal(els.overlay)} els.modalClose.addEventListener('click',closeOverlay)
-
-function setNextVisible(on){
-  els.nextBtn.classList.toggle('hidden', !on);
-  [els.skipBtn, els.missBtn, els.landBtn].forEach(b=> b.classList.toggle('hidden', on));
-}
-
+function setNextVisible(on){ els.nextBtn.classList.toggle('hidden', !on); [els.skipBtn, els.missBtn, els.landBtn].forEach(b=> b.classList.toggle('hidden', on)); }
 
 function buildObsOverlay(){
   const all=["flat","curb","ledge","rail","handrail","flatbar","hubba","manual pad","box","kicker","gap","bank","quarterpipe","stair","funbox"];
@@ -68,7 +63,7 @@ function buildTricksOverlay(){
   const cats=[["flips","Flips"],["grinds","Grinds/Slides"],["spins","Spins"],["manuals","Manuals"],["airs","Airs"]];
   let html='<div class="list">';
   for(const [k,label] of cats){
-    html+=`<label class="cat"><input class="cat" type="checkbox" data-cat="${k}" ${STATE.categories[k]?"checked":""}/> ${label}</label>`;
+    html+=`<label><input type="checkbox" data-cat="${k}" ${STATE.categories[k]?"checked":""}/> ${label}</label>`;
     if(STATE.categories[k]){
       if(k==="flips"){ html+='<div class="list sub">'; for(const n of Object.keys(STATE.flips)){html+=`<label><input type="checkbox" data-flip="${n}" ${STATE.flips[n]?"checked":""}/> ${n}</label>`} html+='</div>'; }
       if(k==="grinds"){ html+='<div class="list sub">'; for(const n of Object.keys(STATE.grinds)){html+=`<label><input type="checkbox" data-grind="${n}" ${STATE.grinds[n]?"checked":""}/> ${n}</label>`} html+='</div>'; }
@@ -121,6 +116,67 @@ $('openHigh').addEventListener('click',renderHighScores);
 $('openHigh2').addEventListener('click',renderHighScores);
 
 /* Trick + Scoring */
+/* Brainlock tuned model v0_56T2 */
+// Session memory for repetition penalties
+let RECENT_TRICKS = {};
+
+// Obstacle meta helpers
+function isDownObstacle(ob){ return ["handrail","rail","hubba","ledge","stair"].includes(ob); }
+function hasKickerSelected(){ return Array.isArray(STATE.obstacles) && STATE.obstacles.includes("kicker"); }
+
+const SCORING = {
+  baseFlip: {
+    "kickflip":200,"heelflip":220,"varial kickflip":280,"hardflip":340,
+    "tre flip":360,"360 flip":360,"laser flip":380,"inward heelflip":320,"bigspin flip":320
+  },
+  baseGrind: {
+    "50-50":220,"5-0":260,"boardslide":230,"noseslide":240,"tailslide":270,
+    "lipslide":300,"smith":340,"feeble":330,"crooked":340,"nosegrind":360,
+    "noseblunt":460,"bluntslide":420
+  },
+  baseManual: {"manual":200},
+
+  stanceMult: { regular:1.00, fakie:1.20, nollie:1.25, switch:1.25 },
+
+  spinMult: { 0:1.00, 180:1.10, 360:1.30 },
+
+  obstacleMult: {
+    "flat":1.00,"manual pad":1.05,"box":1.10,"curb":1.10,
+    "ledge":1.20,"hubba":1.30,"flatbar":1.30,"rail":1.40,"handrail":1.70,
+    "gap":1.50,"kicker":1.10,"stair":1.55,"quarterpipe":1.20,"bank":1.10,"funbox":1.10
+  },
+
+  dirMult: {
+    "smith":   { frontside:1.10, backside:1.20 },
+    "feeble":  { frontside:1.15, backside:1.05 },
+    "crooked": { frontside:1.12, backside:1.06 },
+    "bluntslide": { frontside:1.20, backside:1.15 },
+    "noseblunt":  { frontside:1.25, backside:1.20 },
+    "boardslide": { frontside:1.00, backside:1.05 },
+    "lipslide":   { frontside:1.10, backside:1.15 },
+    "noseslide":  { frontside:1.00, backside:1.05 },
+    "tailslide":  { frontside:1.05, backside:1.10 },
+    "50-50":      { frontside:1.00, backside:1.00 },
+    "5-0":        { frontside:1.05, backside:1.05 },
+    "nosegrind":  { frontside:1.10, backside:1.10 }
+  },
+
+  combo: {
+    flipInToGrind: 1.25,
+    spinPlusFlip:  1.30,
+    spinIntoGrind: 1.15,
+    manualCombo:   1.10
+  },
+
+  attempt: { 1:1.00, 2:0.85, 3:0.75 },
+
+  flowPerLand: 0.03, flowCap: 1.15,
+
+  repeatStart: 3, repeatPenalty: 0.90
+};
+
+let STREAK = 0;
+
 const RULES={GRIND_OK:new Set(["rail","handrail","flatbar","ledge","hubba"]),SLIDE_OK:new Set(["ledge","hubba","rail","handrail","flatbar","curb","box"]),
 MANUAL_OK:new Set(["manual pad","box","funbox","kicker","bank"]),AIR_OK:new Set(["flat","gap","kicker","quarterpipe","bank","stair","funbox"]),
 DIRECTION_DEFAULTS:{"50-50":"frontside","5-0":"frontside","boardslide":"backside","noseslide":"backside","lipslide":"frontside","tailslide":"frontside","bluntslide":"backside","nosegrind":"frontside","crooked":"backside","smith":"backside","feeble":"backside","noseblunt":"frontside"}};
@@ -138,25 +194,72 @@ function allowedGrinds(){return Object.keys(STATE.grinds).filter(k=>STATE.grinds
 function pickObstacle(){const src=(STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:["flat"]);return src[Math.floor(Math.random()*src.length)]}
 function isRail(o){return ["rail","handrail","flatbar"].includes(o)}
 
+
 function generateTrick(){
-  const ob=pickObstacle(); const parts={obstacle:ob};
+  const ob=pickObstacle();
+  const parts={obstacle:ob};
   const pools={stance:stancePool(),spins:allowedSpins(),flips:allowedFlips(),grinds:allowedGrinds()};
-  const canGrind=(STATE.categories.grinds&&(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))&&pools.grinds.length;
-  const canManual=(STATE.categories.manuals&&RULES.MANUAL_OK.has(ob));
-  const canAir=(STATE.categories.airs&&(RULES.AIR_OK.has(ob)||isRail(ob)));
-  const canFlip=(STATE.categories.flips&&pools.flips.length);
-  const patterns=[]; if(canGrind)patterns.push("flipToGrind","grindOnly"); if(canManual)patterns.push("manualOnly"); if(canAir&&canFlip)patterns.push("flipOnly"); if(!patterns.length&&canFlip)patterns.push("flipOnly"); if(!patterns.length)patterns.push("manualOnly");
+
+  if(pools.stance.length){
+    const stPick=Math.random()<0.3?pools.stance[Math.floor(Math.random()*pools.stance.length)]:null;
+    if(stPick && stPick!=="regular") parts.stance=stPick;
+  }
+
+  const L=STATE.level||6;
+  let spinChance = L<=3 ? 0.08 : (L<=6 ? 0.28 : 0.5);
+  if(STATE.categories.spins && pools.spins.length && Math.random()<spinChance){
+    parts.spin=pools.spins[Math.floor(Math.random()*pools.spins.length)];
+  }
+
+  const canGrind = STATE.categories.grinds && pools.grinds.length && (RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob));
+  const canManual= STATE.categories.manuals && RULES.MANUAL_OK.has(ob) && ob!=="handrail";
+  const canFlip  = STATE.categories.flips && pools.flips.length;
+  const canAir   = STATE.categories.airs && (RULES.AIR_OK.has(ob)||isRail(ob));
+
+  let patterns=[];
+  if(["rail","handrail","flatbar"].includes(ob)){
+    if(canGrind && canFlip) patterns.push("flipToGrind","flipToGrind","grindOnly");
+    else if(canGrind) patterns.push("grindOnly");
+    if(canFlip && isRail(ob)) patterns.push("flipOnly");
+  }else if(["ledge","hubba","curb","box"].includes(ob)){
+    if(canGrind && canFlip) patterns.push("flipToGrind","grindOnly","grindOnly");
+    else if(canGrind) patterns.push("grindOnly");
+    if(canFlip) patterns.push("flipOnly");
+    if(canManual) patterns.push("manualOnly");
+  }else if(["flat","gap","kicker","bank","quarterpipe","stair","funbox"].includes(ob)){
+    if(canFlip) patterns.push("flipOnly","flipOnly");
+    if(canManual) patterns.push("manualOnly");
+  }
+  if(!patterns.length){
+    if(canFlip) patterns.push("flipOnly"); else if(canGrind) patterns.push("grindOnly"); else if(canManual) patterns.push("manualOnly");
+  }
+
   const pat=patterns[Math.floor(Math.random()*patterns.length)];
-  if(Math.random()<0.25){const pool=pools.stance;if(pool.length){const st=pool[Math.floor(Math.random()*pool.length)];if(st!=="regular")parts.stance=st;}}
-  if(STATE.categories.spins&&pools.spins.length&&Math.random()<0.2){parts.spin=pools.spins[Math.floor(Math.random()*pools.spins.length)]}
-  if(pat==="flipOnly"){parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]}
-  else if(pat==="grindOnly"){const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)];parts.grind=g;parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside"}
-  else if(pat==="flipToGrind"){const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)];parts.grind=g;parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside";parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]}
-  else if(pat==="manualOnly"){parts.manual="manual"}
-  if(parts.grind){const slide=["boardslide","noseslide","tailslide","lipslide","bluntslide"].includes(parts.grind); if(slide&&!RULES.SLIDE_OK.has(ob))parts.grind=null; if(!slide&&!(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))parts.grind=null}
-  if(parts.flip&&!parts.grind&&!parts.manual){if(!(RULES.AIR_OK.has(ob)||isRail(ob)))parts.flip=null}
-  if(!parts.flip&&!parts.grind&&!parts.manual){parts.flip="kickflip";parts.obstacle=RULES.AIR_OK.has(ob)?ob:"flat"}
+  if(pat==="flipOnly" && canFlip){ parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]; }
+  if(pat==="grindOnly" && canGrind){
+     const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)]; parts.grind=g; parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside";
+  }
+  if(pat==="flipToGrind" && canGrind && canFlip){
+     const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)]; parts.grind=g; parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside";
+     parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)];
+  }
+  if(pat==="manualOnly" && canManual){ parts.manual="manual"; }
+
+  if(parts.grind){
+    const slide=["boardslide","noseslide","tailslide","lipslide","bluntslide"].includes(parts.grind);
+    if(slide && !RULES.SLIDE_OK.has(ob)) parts.grind=null;
+    if(!slide && !(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))) parts.grind=null;
+  }
+  if(parts.flip && !parts.grind && !parts.manual){
+    if(!(RULES.AIR_OK.has(ob)||isRail(ob))) parts.flip=null;
+  }
+  if(!parts.flip && !parts.grind && !parts.manual){
+    if(canFlip){ parts.flip="kickflip"; parts.obstacle=RULES.AIR_OK.has(ob)?ob:"flat"; }
+    else if(canManual){ parts.manual="manual"; parts.obstacle="manual pad"; }
+    else if(canGrind){ const g=pools.grinds[0]; parts.grind=g; parts.obstacle=["rail","flatbar","ledge"].find(x=>RULES.GRIND_OK.has(x))||"rail"; }
+  }
   return parts;
+}
 }
 function describe(c){
   const isRailObs=["rail","handrail","flatbar"].includes(c.obstacle); const parts=[];
@@ -166,15 +269,59 @@ function describe(c){
   if(c.manual)parts.push(c.manual); if(c.obstacle)parts.push(`on ${c.obstacle}`); return parts.join(" ");
 }
 
+
+function normKey(c){
+  const parts=[c.stance||"regular", c.spin||0, c.flip||"-", c.grind||"-", c.manual||"-", c.direction||"-"];
+  return parts.join("|");
+}
+
 function computeScore(c,att){
-  let s=1.0,bd=[]; const st=c.stance||"regular"; s+=BASE.stance[st]||0; bd.push(["stance",st,BASE.stance[st]||0]);
-  if(c.spin){s+=BASE.spin[c.spin]||0; bd.push(["spin",c.spin,BASE.spin[c.spin]||0])}
-  if(c.flip){s+=BASE.flip[c.flip]||0; bd.push(["flip",c.flip,BASE.flip[c.flip]||0])}
-  if(c.grind){s+=BASE.grind[c.grind]||0; bd.push(["grind",c.grind,BASE.grind[c.grind]||0])}
-  if(c.manual){s+=BASE.manual[c.manual]||0; bd.push(["manual",c.manual,BASE.manual[c.manual]||0])}
-  if(c.obstacle){s+=BASE.obstacle[c.obstacle]||0; bd.push(["obstacle",c.obstacle,BASE.obstacle[c.obstacle]||0])}
-  let bonus=0; if(c.flip&&c.grind)bonus+=BONUS.flip_into_grind; if(c.flip&&c.spin)bonus+=BONUS.spin_plus_flip; if(c.spin&&c.grind)bonus+=BONUS.spin_into_grind; if(c.manual&&(c.flip||c.spin))bonus+=BONUS.manual_combo;
-  const base=Math.max(0.1,s)*(1+bonus); const mult=ATTEMPT[att]||1; return {final:+(base*mult).toFixed(2),breakdown:bd,bonus,mult,base:+base.toFixed(2)};
+  if(c.manual && (c.obstacle==="handrail")){ return {final:0,breakdown:[["invalid","manual on handrail","×0"]],bonus:0,mult:0,base:0}; }
+
+  let basePts=0; let breakdown=[];
+  const stance=c.stance||"regular"; const obstacle=c.obstacle||"flat"; const spinVal=c.spin?Number(c.spin):0;
+
+  if(c.flip){ const pts=SCORING.baseFlip[c.flip]||200; basePts+=pts; breakdown.push(["flip",c.flip,pts]); }
+  if(c.grind){
+    const pts=SCORING.baseGrind[c.grind]||240; basePts+=pts; breakdown.push(["grind",c.grind,pts]);
+    if(c.direction){ const m=SCORING.dirMult[c.grind]; if(m && m[c.direction]){ basePts*=m[c.direction]; breakdown.push(["direction",c.direction,"×"+m[c.direction]]); } }
+  }
+  if(c.manual){ const pts=SCORING.baseManual[c.manual]||180; basePts+=pts; breakdown.push(["manual",c.manual,pts]); }
+
+  let obstM=SCORING.obstacleMult[obstacle]||1.0;
+  if((Array.isArray(STATE.obstacles) && STATE.obstacles.includes("kicker")) && (obstacle==="handrail"||obstacle==="rail"||obstacle==="ledge"||obstacle==="hubba")){
+    obstM*=0.95; breakdown.push(["kicker assist","yes","×0.95"]);
+  }
+  basePts*=obstM; breakdown.push(["obstacle",obstacle,"×"+(+obstM.toFixed(2))]);
+
+  const stM=SCORING.stanceMult[stance]||1.0; basePts*=stM; breakdown.push(["stance",stance,"×"+stM]);
+
+  const spM=SCORING.spinMult[spinVal]||1.0; if(spM!==1.0){ basePts*=spM; breakdown.push(["spin",String(spinVal),"×"+spM]); }
+
+  let comboMult=1.0;
+  if(c.flip && c.grind) comboMult*=SCORING.combo.flipInToGrind;
+  if(c.flip && c.spin)  comboMult*=SCORING.combo.spinPlusFlip;
+  if(c.spin && c.grind) comboMult*=SCORING.combo.spinIntoGrind;
+  if(c.manual && (c.flip || c.spin)) comboMult*=SCORING.combo.manualCombo;
+  if(comboMult!==1.0){ basePts*=comboMult; breakdown.push(["combo","—","×"+comboMult]); }
+
+  const key=normKey(c);
+  const count=(RECENT_TRICKS[key]||0)+1;
+  RECENT_TRICKS[key]=count;
+  if(count>=SCORING.repeatStart){
+    const times=count-SCORING.repeatStart+1;
+    const repMult=Math.pow(SCORING.repeatPenalty,times);
+    basePts*=repMult; breakdown.push(["repeat","#"+count,"×"+repMult.toFixed(2)]);
+  }
+
+  const attM=SCORING.attempt[att]||1.0; basePts*=attM; breakdown.push(["attempt","x"+att,"×"+attM]);
+
+  const flowM=Math.min(1+STREAK*SCORING.flowPerLand,SCORING.flowCap);
+  if(flowM!==1.0){ basePts*=flowM; breakdown.push(["flow",STREAK+" streak","×"+flowM.toFixed(2)]); }
+
+  const final=Math.max(1,Math.round(basePts));
+  return {final,breakdown,bonus:(comboMult-1),mult:attM,base:final};
+}
 }
 
 function setView(v){
@@ -185,7 +332,7 @@ function setView(v){
   if(v==="game"){els.scoreLine.textContent='Total Score: '+total+' pts'}
 }
 function updateLetters(){[...els.letters.children].forEach((s,i)=>s.classList.toggle('lost',i<misses))}
-function startSession(){misses=0;total=0;attempt=1;updateLetters();setView("game");nextTrick(true)}
+function startSession(){misses=0;total=0;attempt=1;RECENT_TRICKS={};STREAK=0;updateLetters();setView("game");nextTrick(true)}
 els.startBtn.addEventListener('click',startSession);
 
 function nextTrick(){attempt=1;current=generateTrick();els.trickText.textContent=describe(current)||"kickflip on flat";updateAttemptUI();setNextVisible(false);els.skipBtn.disabled=false;els.missBtn.disabled=false;els.landBtn.disabled=false;els.scoreLine.textContent='Total Score: '+total+' pts'}
