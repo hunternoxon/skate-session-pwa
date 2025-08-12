@@ -1,4 +1,4 @@
-const VERSION="0.5.6";
+const VERSION="0.5.7";
 const DEFAULTS={level:6,categories:{flips:true,grinds:true,manuals:true,airs:true,spins:true},stances:{regular:true,switch:true,nollie:true,fakie:true},
 flips:{"kickflip":true,"heelflip":true,"varial kickflip":true,"hardflip":true,"tre flip":true,"360 flip":true,"laser flip":true,"inward heelflip":true,"bigspin flip":true},
 grinds:{"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"crooked":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},
@@ -44,6 +44,11 @@ function hideModal(node){node.classList.add('hidden');node.setAttribute('aria-hi
 
 function openOverlay(title,html){els.modalTitle.textContent=title;els.modalBody.innerHTML=html;showModal(els.overlay)}
 function closeOverlay(){hideModal(els.overlay)} els.modalClose.addEventListener('click',closeOverlay)
+function setNextVisible(on){
+  els.nextBtn.classList.toggle('hidden', !on);
+  [els.skipBtn, els.missBtn, els.landBtn].forEach(b=> b.classList.toggle('is-hidden', on));
+}
+
 
 function buildObsOverlay(){
   const all=["flat","curb","ledge","rail","handrail","flatbar","hubba","manual pad","box","kicker","gap","bank","quarterpipe","stair","funbox"];
@@ -62,7 +67,7 @@ function buildTricksOverlay(){
   const cats=[["flips","Flips"],["grinds","Grinds/Slides"],["spins","Spins"],["manuals","Manuals"],["airs","Airs"]];
   let html='<div class="list">';
   for(const [k,label] of cats){
-    html+=`<label><input type="checkbox" data-cat="${k}" ${STATE.categories[k]?"checked":""}/> ${label}</label>`;
+    html+=`<label class="cat"><input class="cat" type="checkbox" data-cat="${k}" ${STATE.categories[k]?"checked":""}/> ${label}</label>`;
     if(STATE.categories[k]){
       if(k==="flips"){ html+='<div class="list sub">'; for(const n of Object.keys(STATE.flips)){html+=`<label><input type="checkbox" data-flip="${n}" ${STATE.flips[n]?"checked":""}/> ${n}</label>`} html+='</div>'; }
       if(k==="grinds"){ html+='<div class="list sub">'; for(const n of Object.keys(STATE.grinds)){html+=`<label><input type="checkbox" data-grind="${n}" ${STATE.grinds[n]?"checked":""}/> ${n}</label>`} html+='</div>'; }
@@ -131,27 +136,64 @@ function allowedFlips(){return Object.keys(STATE.flips).filter(k=>STATE.flips[k]
 function allowedGrinds(){return Object.keys(STATE.grinds).filter(k=>STATE.grinds[k])}
 function pickObstacle(){const src=(STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:["flat"]);return src[Math.floor(Math.random()*src.length)]}
 function isRail(o){return ["rail","handrail","flatbar"].includes(o)}
+function pickStanceBySettings(){
+  const pool=stancePool();
+  if(!pool.length) return null;
+  const nonRegular=pool.filter(s=>s!=="regular");
+  if(!STATE.stances.regular && nonRegular.length){ return nonRegular[Math.floor(Math.random()*nonRegular.length)] }
+  if(pool.length===1){ return pool[0] }
+  if(nonRegular.length && Math.random()<0.5){ return nonRegular[Math.floor(Math.random()*nonRegular.length)] }
+  return null;
+}
+
 
 function generateTrick(){
-  const ob=pickObstacle(); const parts={obstacle:ob};
-  const pools={stance:stancePool(),spins:allowedSpins(),flips:allowedFlips(),grinds:allowedGrinds()};
+  const ob=pickObstacle(); 
+  const pools={spins:allowedSpins(),flips:allowedFlips(),grinds:allowedGrinds()};
+  const parts={obstacle:ob};
+
+  const chosenStance = pickStanceBySettings();
+  if(chosenStance) parts.stance = chosenStance;
+
   const canGrind=(STATE.categories.grinds&&(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))&&pools.grinds.length;
   const canManual=(STATE.categories.manuals&&RULES.MANUAL_OK.has(ob));
   const canAir=(STATE.categories.airs&&(RULES.AIR_OK.has(ob)||isRail(ob)));
   const canFlip=(STATE.categories.flips&&pools.flips.length);
-  const patterns=[]; if(canGrind)patterns.push("flipToGrind","grindOnly"); if(canManual)patterns.push("manualOnly"); if(canAir&&canFlip)patterns.push("flipOnly"); if(!patterns.length&&canFlip)patterns.push("flipOnly"); if(!patterns.length)patterns.push("manualOnly");
-  const pat=patterns[Math.floor(Math.random()*patterns.length)];
-  if(Math.random()<0.25){const pool=pools.stance;if(pool.length){const st=pool[Math.floor(Math.random()*pool.length)];if(st!=="regular")parts.stance=st;}}
-  if(STATE.categories.spins&&pools.spins.length&&Math.random()<0.2){parts.spin=pools.spins[Math.floor(Math.random()*pools.spins.length)]}
-  if(pat==="flipOnly"){parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]}
-  else if(pat==="grindOnly"){const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)];parts.grind=g;parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside"}
-  else if(pat==="flipToGrind"){const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)];parts.grind=g;parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside";parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]}
-  else if(pat==="manualOnly"){parts.manual="manual"}
-  if(parts.grind){const slide=["boardslide","noseslide","tailslide","lipslide","bluntslide"].includes(parts.grind); if(slide&&!RULES.SLIDE_OK.has(ob))parts.grind=null; if(!slide&&!(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))parts.grind=null}
-  if(parts.flip&&!parts.grind&&!parts.manual){if(!(RULES.AIR_OK.has(ob)||isRail(ob)))parts.flip=null}
-  if(!parts.flip&&!parts.grind&&!parts.manual){parts.flip="kickflip";parts.obstacle=RULES.AIR_OK.has(ob)?ob:"flat"}
-  return parts;
-}
+
+  const patterns=[]; 
+  if(canGrind)patterns.push("flipToGrind","grindOnly");
+  if(canManual)patterns.push("manualOnly");
+  if(canAir&&canFlip)patterns.push("flipOnly");
+  if(!patterns.length&&canFlip)patterns.push("flipOnly");
+  if(!patterns.length)patterns.push("manualOnly");
+
+  for(let tries=0; tries<12; tries++){
+    const pat=patterns[Math.floor(Math.random()*patterns.length)];
+    let temp={...parts};
+
+    if(STATE.categories.spins&&pools.spins.length&&Math.random()<0.2){temp.spin=pools.spins[Math.floor(Math.random()*pools.spins.length)]}
+    if(pat==="flipOnly"){ if(canFlip){ temp.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)] } }
+    else if(pat==="grindOnly"){ if(canGrind){ const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)]; temp.grind=g; temp.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside" } }
+    else if(pat==="flipToGrind"){ if(canGrind && canFlip){ const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)]; temp.grind=g; temp.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside"; temp.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)] } }
+    else if(pat==="manualOnly"){ if(canManual){ temp.manual="manual" } }
+
+    if(temp.grind){
+      const slide=["boardslide","noseslide","tailslide","lipslide","bluntslide"].includes(temp.grind);
+      if(slide && !RULES.SLIDE_OK.has(ob)) temp.grind=null;
+      if(!slide && !(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))) temp.grind=null;
+    }
+    if(temp.flip&&!temp.grind&&!temp.manual){ if(!(RULES.AIR_OK.has(ob)||isRail(ob))) temp.flip=null }
+
+    if(temp.flip||temp.grind||temp.manual){
+      return temp;
+    }
+  }
+
+  if(STATE.categories.flips && pools.flips.length){ return {obstacle: RULES.AIR_OK.has(ob)?ob:"flat", flip: pools.flips[0], stance: parts.stance} }
+  if(STATE.categories.manuals){ return {obstacle: "manual pad", manual: "manual", stance: parts.stance} }
+  if(STATE.categories.grinds && pools.grinds.length){ const g=pools.grinds[0]; return {obstacle: (RULES.SLIDE_OK.has("rail")?"rail":"ledge"), grind:g, direction: RULES.DIRECTION_DEFAULTS[g]||"frontside", stance: parts.stance} }
+  return {obstacle:"flat", flip:"kickflip", stance: parts.stance};
+}}
 function describe(c){
   const isRailObs=["rail","handrail","flatbar"].includes(c.obstacle); const parts=[];
   if(c.flip&&!c.grind&&!c.manual&&isRailObs){parts.push(c.flip,"over",c.obstacle);return parts.join(" ")}
@@ -182,13 +224,13 @@ function updateLetters(){[...els.letters.children].forEach((s,i)=>s.classList.to
 function startSession(){misses=0;total=0;attempt=1;updateLetters();setView("game");nextTrick(true)}
 els.startBtn.addEventListener('click',startSession);
 
-function nextTrick(){attempt=1;current=generateTrick();els.trickText.textContent=describe(current)||"kickflip on flat";updateAttemptUI();els.nextBtn.classList.add('hidden');els.skipBtn.disabled=false;els.missBtn.disabled=false;els.landBtn.disabled=false;els.scoreLine.textContent='Total Score: '+total+' pts'}
+function nextTrick(){attempt=1;current=generateTrick();els.trickText.textContent=describe(current)||"kickflip on flat";updateAttemptUI();setNextVisible(false);els.skipBtn.disabled=false;els.missBtn.disabled=false;els.landBtn.disabled=false;els.scoreLine.textContent='Total Score: '+total+' pts'}
 function updateAttemptUI(){els.attemptBadge.textContent=`Attempt ${attempt}/3`;const rep=computeScore(current,attempt);els.openAttempt.textContent=`This attempt: ${rep.final} pts`}
 els.openAttempt.addEventListener('click',()=>{const rep=computeScore(current,attempt);let lines=`Base: ${rep.base} \nCombo x${(1+rep.bonus).toFixed(2)} \nAttempt x${rep.mult} => Final: ${rep.final} pts \n\nBreakdown:\n`;for(const [k,n,p] of rep.breakdown){lines+=` + ${k}: ${n} = ${p}\n`} openOverlay("Attempt Score Breakdown",`<pre>${lines}</pre>`)});
 
 function settle(hit){
-  if(hit){const rep=computeScore(current,attempt);total=+(total+rep.final).toFixed(2);els.scoreLine.textContent='Total Score: '+total+' pts';els.nextBtn.classList.remove('hidden');els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}
-  else{if(attempt<3){attempt++;updateAttemptUI()}else{misses++;updateLetters();if(misses>=5){endSession();return}els.nextBtn.classList.remove('hidden');els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}}
+  if(hit){const rep=computeScore(current,attempt);total=+(total+rep.final).toFixed(2);els.scoreLine.textContent='Total Score: '+total+' pts';setNextVisible(true);els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}
+  else{if(attempt<3){attempt++;updateAttemptUI()}else{misses++;updateLetters();if(misses>=5){endSession();return}setNextVisible(true);els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}}
 }
 els.landBtn.addEventListener('click',()=>settle(true));
 els.missBtn.addEventListener('click',()=>settle(false));

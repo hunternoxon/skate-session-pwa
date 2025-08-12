@@ -57,3 +57,13 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,sys
 .list-item{background:#0f1012;border:1px solid var(--border);color:#f3f4f6;padding:14px;border-radius:12px;text-align:left}
 input[type="checkbox"]{transform:scale(1.2)} 
 input[type="text"], input[type="search"], input[type="number"], input[type="password"]{background:#0d0e10;border:1px solid var(--border);color:#fff;border-radius:10px;padding:10px 12px}
+
+
+/* v0.5.7: action buttons hide when Next shows */
+.actions .hidden, .actions .is-hidden { display:none !important; }
+
+/* v0.5.7: category vs subcategory hierarchy for Tricks overlay */
+.list input[type="checkbox"].cat { transform: scale(1.5); }
+.list label.cat { font-size: 18px; font-weight: 800; background:#101215; border:1px solid #2a2b2f; border-radius:10px; padding:10px 12px; }
+.list .sub { margin:4px 0 0 14px; border-left:2px solid #232429; padding-left:10px; }
+.list .sub label { font-size:14px; font-weight:600; background:#0e0f11; border:1px solid #1f2024; border-radius:10px; padding:8px 8px; }
