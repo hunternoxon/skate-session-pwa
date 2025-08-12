@@ -1,26 +1,23 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0b0c" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Brainlock Skateboard Game — Inline Tuned</title>
+<meta name="theme-color" content="#0b0b0c" />
+<style>
 :root{--bg:#0b0b0c;--card:#141416;--muted:#8a8e93;--text:#f3f4f6;--accent:#0ea5e9;--ok:#22c55e;--bad:#ef4444;--ghost:#1c1d20;--border:#222327}
-*{box-sizing:border-box}html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.35}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.35}
 .hidden{display:none!important}
-/* Keep content always tappable above the sheet */
 .safe{min-height:100%;display:grid;grid-template-rows:auto auto auto 1fr auto;padding-bottom:320px;position:relative}
 .topbar{position:sticky;top:0;z-index:7;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(11,11,12,0.85);backdrop-filter:blur(8px)}
 .brand-left{font-weight:800;letter-spacing:.2px;margin:0;cursor:pointer;font-size:18px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .icon{font-size:18px}
-.link{background:none;border:none;color:var(--accent);text-decoration:underline;padding:0}
-.ghost{background:var(--ghost);color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:12px;font-size:18px;min-height:40px;min-width:40px}
-.primary{background:var(--accent);color:#001018;border:none;padding:14px 18px;border-radius:14px;font-weight:800}
-.success{background:var(--ok);color:#051507;border:none;padding:14px 18px;border-radius:14px;font-weight:800}
-.danger{background:var(--bad);color:#160203;border:none;padding:14px 18px;border-radius:14px;font-weight:800}
+.link{background:none;border:none;color:var(--accent);text-decoration:underline;padding:0;border-radius:9999px}
+.ghost{background:var(--ghost);color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:9999px;font-size:18px;min-height:40px;min-width:40px}
+.primary{background:#ffffff;color:#0b0b0c;border:1px solid #ffffff;padding:14px 18px;border-radius:9999px;font-weight:800}
+.success{background:var(--ok);color:#051507;border:none;padding:14px 18px;border-radius:9999px;font-weight:800}
+.danger{background:var(--bad);color:#160203;border:none;padding:14px 18px;border-radius:9999px;font-weight:800}
 .level-row{display:flex;align-items:center;gap:8px;padding:8px 12px;position:relative;z-index:6}
 .pill{background:#141416;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
 .gameopts{margin:0 12px 8px;border:1px solid #1c1d20;background:#0d0e10;border-radius:12px;padding:8px 10px;position:relative;z-index:6}
@@ -32,7 +29,6 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,sys
 .muted{color:var(--muted)}
 .small{font-size:12px}
 .card{margin:16px;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--card)}
-/* Bottom tray: lower z-index than topbar + options; pointer-events limited to itself */
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:3;border-top-left-radius:18px;border-top-right-radius:18px;border-bottom-left-radius:0;border-bottom-right-radius:0;margin:0;padding:16px;background:var(--card);max-height:58vh;overflow:auto;padding-bottom:calc(env(safe-area-inset-bottom) + 28px)}
 .sheet-header{display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 8px}
 .letters-sheet{display:flex;justify-content:center;gap:0.8ch}
@@ -43,20 +39,17 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,sys
 .hero-emoji{font-size:42px;opacity:.9;text-align:center;margin:8px 0 14px}
 .trick.bigtitle{font-size:28px;font-weight:800;padding:16px;background:#101215;border:1px dashed var(--border);border-radius:14px;min-height:72px;display:flex;flex-direction:column;gap:10px}
 .trick-topline{display:flex;justify-content:space-between;align-items:center}
-.badge{font-size:12px;color:#cbd5e1;background:#0b0c0e;border:1px solid var(--border);padding:4px 8px;border-radius:8px}
+.badge{font-size:12px;color:#cbd5e1;background:#0b0c0e;border:1px solid var(--border);padding:4px 8px;border-radius:9999px}
 .badge.right{margin-left:auto}
 #trickText{font-size:22px}
 .actions{display:flex;gap:12px;justify-content:flex-end;margin:16px 0;flex-wrap:wrap}
 .sheet-actions{display:flex;justify-content:flex-start;margin-top:8px}
-.full{width:100%}
-.xl{font-size:20px}
-.lg{font-size:16px}
-.big{font-size:20px}
+.full{width:100%} .xl{font-size:20px} .lg{font-size:16px} .big{font-size:20px}
 .row.spaced{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .foot{padding:16px;color:var(--muted);border-top:1px solid var(--border)}
 /* Modals */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:10}
-.modal[aria-hidden="true"]{pointer-events:none}
+.modal.hidden{display:none!important;pointer-events:none!important}
 .modal-card{background:#141416;border:1px solid var(--border);border-radius:16px;max-width:820px;width:92vw;padding:0;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
 .modal-header{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)}
 .pane{padding:14px;overflow:auto;max-height:70vh}
@@ -64,180 +57,159 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px -apple-system,sys
 .modal-footer.two{justify-content:space-between}
 .list{display:flex;flex-direction:column;gap:8px}
 .list-item{background:#0f1012;border:1px solid var(--border);color:#f3f4f6;padding:14px;border-radius:12px;text-align:left}
-input[type="checkbox"]{transform:scale(1.2)} 
-input[type="text"], input[type="search"], input[type="number"], input[type="password"]{background:#0d0e10;border:1px solid var(--border);color:#fff;border-radius:10px;padding:10px 12px}
-
-/* Inline build hardening */
-.modal.hidden{display:none!important;pointer-events:none!important}
-/* Baseline CTAs */
-.primary{background:#ffffff !important;color:#0b0b0c !important;border:1px solid #ffffff !important;border-radius:9999px !important}
-.ghost, .success, .danger, .link, .chev, .badge, .list-item{border-radius:9999px !important}
+input[type="checkbox"]{transform:scale(1.2)}
+input[type="text"]{background:#0d0e10;border:1px solid var(--border);color:#fff;border-radius:10px;padding:10px 12px}
 /* Tricks overlay hierarchy baseline */
 .list label.cat{font-size:28px;font-weight:900;padding:12px 14px;background:#101215;border:1px solid #2a2b2f;display:block;margin:10px 0 8px 0;border-radius:14px}
 .list input[type="checkbox"].cat{transform:scale(1.6)}
 .list .sub{margin:8px 0 20px 16px;border-left:2px solid #232429;padding-left:12px}
 .list .sub label{font-size:14px;font-weight:600;background:#0e0f11;border:1px solid #1f2024;border-radius:12px;padding:8px 10px}
-
 </style>
-  <title>Brainlock Skateboard Game</title>
 </head>
 <body>
-  <div class="safe">
-    <header class="topbar">
-      <h1 id="titleText" class="brand-left" aria-label="Brainlock Skateboard Game">Brainlock Skateboard Game</h1>
-      <button id="settingsBtn" class="ghost icon" aria-label="Settings">⚙️</button>
-    </header>
+<div class="safe">
+  <header class="topbar">
+    <h1 id="titleText" class="brand-left" aria-label="Brainlock Skateboard Game">Brainlock Skateboard Game</h1>
+    <button id="settingsBtn" class="ghost icon" aria-label="Settings">⚙️</button>
+  </header>
 
-    <section class="level-row">
-      <div id="levelPill" class="pill">Level <span id="levelVal">6</span> • <span id="levelDesc">Advanced am</span></div>
-      <button id="editLevel" class="link">Edit</button>
+  <section class="level-row">
+    <div id="levelPill" class="pill">Level <span id="levelVal">6</span> • <span id="levelDesc">Advanced am</span></div>
+    <button id="editLevel" class="link">Edit</button>
+  </section>
+
+  <section class="gameopts" id="gameOpts">
+    <div class="go-header">
+      <span class="muted">Game options</span>
+      <button id="goToggle" class="chev" aria-expanded="false">▼</button>
+    </div>
+    <div class="go-body hidden">
+      <div class="row">
+        <span class="label">Obstacles</span>
+        <button id="editObs" class="link">Edit</button>
+      </div>
+      <div class="summary" id="obsSummary">rail, ledge</div>
+      <div class="row">
+        <span class="label">Stances</span>
+        <button id="editStance" class="link">Edit</button>
+      </div>
+      <div class="summary" id="stanceSummary">regular, switch</div>
+      <div class="row">
+        <span class="label">Tricks</span>
+        <button id="editTricks" class="link">Edit</button>
+      </div>
+      <div class="summary" id="trickSummary">Flips/Grinds • F:8 G:6 S:2</div>
+    </div>
+  </section>
+
+  <main id="screen">
+    <section class="card sheet" id="sheet">
+      <div class="sheet-header">
+        <div id="letters" class="letters-sheet"><span>S</span><span>K</span><span>A</span><span>T</span><span>E</span></div>
+        <div id="scoreLine" class="scoreline">High Score: <button id="openHigh" class="link small">0 pts</button></div>
+      </div>
+
+      <div id="viewSetup" class="view active">
+        <div class="hero-emoji">🧠 🔒 🛹</div>
+        <button id="startBtn" class="primary xl full start-cta">Start Session</button>
+      </div>
+
+      <div id="viewGame" class="view hidden">
+        <div id="trick" class="trick bigtitle">
+          <div class="trick-topline">
+            <span id="attemptBadge" class="badge">Attempt 1/3</span>
+            <button id="openAttempt" class="badge right as-link">This attempt: —</button>
+          </div>
+          <div id="trickText">—</div>
+        </div>
+
+        <div class="actions right" id="actionRow">
+          <button id="skipBtn" class="ghost xl">Skip</button>
+          <button id="missBtn" class="danger xl">Miss</button>
+          <button id="landBtn" class="success xl">Land</button>
+          <button id="nextBtn" class="primary xl hidden">Next</button>
+        </div>
+
+        <div class="sheet-actions">
+          <button id="endBtn" class="ghost lg left">End Session</button>
+        </div>
+      </div>
+
+      <div id="viewOver" class="view hidden">
+        <div class="hero-emoji">🧠 🔒 🛹</div>
+        <div class="row spaced">
+          <div class="big">Final: <span id="finalScore">0 pts</span></div>
+          <div class="big right">High: <button id="openHigh2" class="link">0 pts</button></div>
+        </div>
+        <button id="restartBtn" class="primary xl full">New Session</button>
+      </div>
     </section>
+  </main>
 
-    <section class="gameopts" id="gameOpts">
-      <div class="go-header">
-        <span class="muted">Game options</span>
-        <button id="goToggle" class="chev" aria-expanded="false">▼</button>
-      </div>
-      <div class="go-body hidden">
-        <div class="row">
-          <span class="label">Obstacles</span>
-          <button id="editObs" class="link">Edit</button>
-        </div>
-        <div class="summary" id="obsSummary">rail, ledge</div>
-        <div class="row">
-          <span class="label">Stances</span>
-          <button id="editStance" class="link">Edit</button>
-        </div>
-        <div class="summary" id="stanceSummary">regular, switch</div>
-        <div class="row">
-          <span class="label">Tricks</span>
-          <button id="editTricks" class="link">Edit</button>
-        </div>
-        <div class="summary" id="trickSummary">Flips/Grinds • F:8 G:6 S:2</div>
-      </div>
-    </section>
+  <footer class="foot">v0.5.6‑inline‑tuned • Updated: 2025‑08‑12</footer>
+</div>
 
-    <main id="screen">
-      <section class="card sheet" id="sheet">
-        <div class="sheet-header">
-          <div id="letters" class="letters-sheet"><span>S</span><span>K</span><span>A</span><span>T</span><span>E</span></div>
-          <div id="scoreLine" class="scoreline">High Score: <button id="openHigh" class="link small">0 pts</button></div>
-        </div>
-
-        <div id="viewSetup" class="view active">
-          <div class="hero-emoji">🧠 🔒 🛹</div>
-          <button id="startBtn" class="primary xl full start-cta">Start Session</button>
-        </div>
-
-        <div id="viewGame" class="view hidden">
-          <div id="trick" class="trick bigtitle">
-            <div class="trick-topline">
-              <span id="attemptBadge" class="badge">Attempt 1/3</span>
-              <button id="openAttempt" class="badge right as-link">This attempt: —</button>
-            </div>
-            <div id="trickText">—</div>
-          </div>
-
-          <div class="actions right" id="actionRow">
-            <button id="skipBtn" class="ghost xl">Skip</button>
-            <button id="missBtn" class="danger xl">Miss</button>
-            <button id="landBtn" class="success xl">Land</button>
-            <button id="nextBtn" class="primary xl hidden">Next</button>
-          </div>
-
-          <div class="sheet-actions">
-            <button id="endBtn" class="ghost lg left">End Session</button>
-          </div>
-        </div>
-
-        <div id="viewOver" class="view hidden">
-          <div class="hero-emoji">🧠 🔒 🛹</div>
-          <div class="row spaced">
-            <div class="big">Final: <span id="finalScore">0 pts</span></div>
-            <div class="big right">High: <button id="openHigh2" class="link">0 pts</button></div>
-          </div>
-          <button id="restartBtn" class="primary xl full">New Session</button>
-        </div>
-      </section>
-    </main>
-
-    <footer class="foot">v0.5.6-inline-full • Updated: 2025-08-12</footer>
+<!-- Overlays -->
+<div id="overlay" class="modal hidden" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-header"><h3 id="modalTitle">Overlay</h3></div>
+    <div id="modalBody" class="pane"></div>
+    <div class="modal-footer"><button id="modalClose" class="ghost">X</button></div>
   </div>
+</div>
 
-  <div id="overlay" class="modal hidden" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="modalTitle">Overlay</h3>
+<div id="confirm" class="modal hidden" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-header"><h3>End session?</h3></div>
+    <div class="pane">Are you sure you want to end this session now?</div>
+    <div class="modal-footer two"><button id="confirmYes" class="danger">Yes, end</button><button id="confirmNo" class="ghost">Cancel</button></div>
+  </div>
+</div>
+
+<div id="settings" class="modal hidden" aria-hidden="true">
+  <div class="modal-card">
+    <div class="modal-header"><h3>About & Tools</h3></div>
+    <div class="pane">
+      <div class="list">
+        <label class="row"><span>Nickname</span><input id="nickInput" placeholder="Your name"/></label>
+        <label class="row"><span>Admin Mode</span><input id="adminToggle" type="checkbox"/></label>
+        <button id="viewRules" class="list-item">Game Rules</button>
+        <button id="clearCache" class="list-item">Clear Cache & Reload</button>
       </div>
-      <div id="modalBody" class="pane"></div>
-      <div class="modal-footer">
-        <button id="modalClose" class="ghost">X</button>
-      </div>
+      <div class="muted small">Version v0.5.6‑inline‑tuned • 2025‑08‑12</div>
     </div>
+    <div class="modal-footer"><button id="settingsClose" class="ghost">X</button></div>
   </div>
+</div>
 
-  <div id="confirm" class="modal hidden" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>End session?</h3></div>
-      <div class="pane">Are you sure you want to end this session now?</div>
-      <div class="modal-footer two">
-        <button id="confirmYes" class="danger">Yes, end</button>
-        <button id="confirmNo" class="ghost">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="settings" class="modal hidden" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-header"><h3>About & Tools</h3></div>
-      <div class="pane">
-        <div class="list">
-          <label class="row">
-            <span>Nickname</span>
-            <input id="nickInput" placeholder="Your name"/>
-          </label>
-          <label class="row">
-            <span>Admin Mode</span>
-            <input id="adminToggle" type="checkbox"/>
-          </label>
-          <button id="viewRules" class="list-item">Game Rules</button>
-          <button id="clearCache" class="list-item">Clear Cache & Reload</button>
-        </div>
-        <div class="muted small">Version v0.5.6 • 2025-08-10</div>
-      </div>
-      <div class="modal-footer">
-        <button id="settingsClose" class="ghost">X</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-const VERSION="0.5.6";
+<script>
+const VERSION="0.5.6-inline-tuned";
 const DEFAULTS={level:6,categories:{flips:true,grinds:true,manuals:true,airs:true,spins:true},stances:{regular:true,switch:true,nollie:true,fakie:true},
-flips:{"kickflip":true,"heelflip":true,"varial kickflip":true,"hardflip":true,"tre flip":true,"360 flip":true,"laser flip":true,"inward heelflip":true,"bigspin flip":true},
-grinds:{"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"crooked":true,"nosegrind":true,"noseblunt":true,"bluntslide":true},
-spins:{"180":true,"360":true,"540":true,"720":false},
-obstacles:["flat","ledge","rail","handrail","flatbar","hubba","kicker","gap","bank","quarterpipe"]};
+flips:{"kickflip":true,"heelflip":true,"varial kickflip":true,"hardflip":true,"tre flip":true,"360 flip":true,"laser flip":true,"inward heelflip":true,"bigspin flip":true,"impossible":true,"double kickflip":false,"double heelflip":false},
+grinds:{"50-50":true,"5-0":true,"boardslide":true,"noseslide":true,"tailslide":true,"lipslide":true,"smith":true,"feeble":true,"crooked":true,"overcrook":false,"nosegrind":true,"noseblunt":true,"bluntslide":true},
+spins:{"180":true,"360":true,"540":false,"720":false},
+obstacles:["flat","curb","ledge","rail","handrail","flatbar","hubba","manual pad","box","kicker","gap","bank","quarterpipe","stair","funbox"]};
 const LEVEL_DESC={1:"Beginner",2:"Basic",3:"Park flow",4:"Consistent am",5:"Local ripper",6:"Advanced am",7:"Sponsored",8:"Pro",9:"Top pro",10:"Ender-only"};
-let STATE;try{STATE=JSON.parse(localStorage.getItem('bl_state'))||DEFAULTS}catch{STATE=DEFAULTS}
+
+let STATE; try{STATE=JSON.parse(localStorage.getItem('bl_state'))||DEFAULTS}catch{STATE=DEFAULTS}
 function saveState(s){localStorage.setItem('bl_state',JSON.stringify(s))}
 function getScores(){try{return JSON.parse(localStorage.getItem('bl_scores')||"[]")}catch{return[]}}
 function setScores(a){localStorage.setItem('bl_scores',JSON.stringify(a))}
 function bestScore(){const s=getScores();return s.length?Math.max(...s.map(x=>x.value)):0}
-function isAdmin(){return localStorage.getItem('bl_admin')==="1"}function setAdmin(on){localStorage.setItem('bl_admin',on?"1":"0")}
+function isAdmin(){return localStorage.getItem('bl_admin')==="1"} function setAdmin(on){localStorage.setItem('bl_admin',on?"1":"0")}
 
 const $=id=>document.getElementById(id);
-const els={title:$('titleText'),settingsBtn:$('settingsBtn'),levelPill:$('levelPill'),levelVal:$('levelVal'),levelDesc:$('levelDesc'),editLevel:$('editLevel'),
-goToggle:$('goToggle'),goBody:document.querySelector('.go-body'),obsSummary:$('obsSummary'),stanceSummary:$('stanceSummary'),trickSummary:$('trickSummary'),
-letters:$('letters'),scoreLine:$('scoreLine'),openHigh:$('openHigh'),openHigh2:$('openHigh2'),
-startBtn:$('startBtn'),viewSetup:$('viewSetup'),viewGame:$('viewGame'),viewOver:$('viewOver'),
-attemptBadge:$('attemptBadge'),openAttempt:$('openAttempt'),trickText:$('trickText'),
-skipBtn:$('skipBtn'),missBtn:$('missBtn'),landBtn:$('landBtn'),nextBtn:$('nextBtn'),
-endBtn:$('endBtn'),finalScore:$('finalScore'),restartBtn:$('restartBtn'),
-overlay:$('overlay'),modalTitle:$('modalTitle'),modalBody:$('modalBody'),modalClose:$('modalClose'),
-confirm:$('confirm'),confirmYes:$('confirmYes'),confirmNo:$('confirmNo'),
-settings:$('settings'),settingsClose:$('settingsClose'),nickInput:$('nickInput'),adminToggle:$('adminToggle'),clearCache:$('clearCache'),
-editObs:$('editObs'),editStance:$('editStance'),editTricks:$('editTricks')};
+const els={title:$('#titleText'),settingsBtn:$('#settingsBtn'),levelPill:$('#levelPill'),levelVal:$('#levelVal'),levelDesc:$('#levelDesc'),editLevel:$('#editLevel'),
+goToggle:$('#goToggle'),goBody:document.querySelector('.go-body'),obsSummary:$('#obsSummary'),stanceSummary:$('#stanceSummary'),trickSummary:$('#trickSummary'),
+letters:$('#letters'),scoreLine:$('#scoreLine'),openHigh:$('#openHigh'),openHigh2:$('#openHigh2'),
+startBtn:$('#startBtn'),viewSetup:$('#viewSetup'),viewGame:$('#viewGame'),viewOver:$('#viewOver'),
+attemptBadge:$('#attemptBadge'),openAttempt:$('#openAttempt'),trickText:$('#trickText'),
+skipBtn:$('#skipBtn'),missBtn:$('#missBtn'),landBtn:$('#landBtn'),nextBtn:$('#nextBtn'),
+endBtn:$('#endBtn'),finalScore:$('#finalScore'),restartBtn:$('#restartBtn'),
+overlay:$('#overlay'),modalTitle:$('#modalTitle'),modalBody:$('#modalBody'),modalClose:$('#modalClose'),
+confirm:$('#confirm'),confirmYes:$('#confirmYes'),confirmNo:$('#confirmNo'),
+settings:$('#settings'),settingsClose:$('#settingsClose'),nickInput:$('#nickInput'),adminToggle:$('#adminToggle'),clearCache:$('#clearCache'),
+editObs:$('#editObs'),editStance:$('#editStance'),editTricks:$('#editTricks')};
 
 els.title.addEventListener('click',()=>location.reload());
 
@@ -255,14 +227,11 @@ function renderSummaries(){
 }
 function showModal(node){node.classList.remove('hidden');node.setAttribute('aria-hidden','false')}
 function hideModal(node){node.classList.add('hidden');node.setAttribute('aria-hidden','true')}
-
 function openOverlay(title,html){els.modalTitle.textContent=title;els.modalBody.innerHTML=html;showModal(els.overlay)}
 function closeOverlay(){hideModal(els.overlay)} els.modalClose.addEventListener('click',closeOverlay)
-function setNextVisible(on){ els.nextBtn.classList.toggle('hidden', !on); [els.skipBtn, els.missBtn, els.landBtn].forEach(b=> b.classList.toggle('hidden', on)); }
 
 function buildObsOverlay(){
-  const all=["flat","curb","ledge","rail","handrail","flatbar","hubba","manual pad","box","kicker","gap","bank","quarterpipe","stair","funbox"];
-  const set=new Set(STATE.obstacles||[]); let html='<div class="list">';
+  const all=DEFAULTS.obstacles; const set=new Set(STATE.obstacles||[]); let html='<div class="list">';
   for(const o of all){html+=`<label><input type="checkbox" data-o="${o}" ${set.has(o)?"checked":""}/> ${o}</label>`}
   html+='</div>';return html;
 }
@@ -299,9 +268,9 @@ function wireTricksOverlay(){
   els.modalBody.querySelectorAll('input[data-spin]').forEach(cb=>{cb.onchange=()=>{STATE.spins[cb.dataset.spin]=cb.checked;saveState(STATE);renderSummaries();}});
 }
 
-$('editObs').onclick=()=>{openOverlay("Obstacles",buildObsOverlay());wireObsOverlay()}
-$('editStance').onclick=()=>{openOverlay("Stances",buildStanceOverlay());wireStanceOverlay()}
-$('editTricks').onclick=()=>{openOverlay("Tricks",buildTricksOverlay());wireTricksOverlay()}
+document.getElementById('editObs').onclick=()=>{openOverlay("Obstacles",buildObsOverlay());wireObsOverlay()}
+document.getElementById('editStance').onclick=()=>{openOverlay("Stances",buildStanceOverlay());wireStanceOverlay()}
+document.getElementById('editTricks').onclick=()=>{openOverlay("Tricks",buildTricksOverlay());wireTricksOverlay()}
 
 els.goToggle.addEventListener('click',()=>{
   const willShow=els.goBody.classList.contains('hidden'); els.goBody.classList.toggle('hidden'); els.goToggle.textContent=willShow?"▲":"▼"; els.goToggle.setAttribute('aria-expanded',String(willShow));
@@ -311,8 +280,8 @@ els.settingsBtn.addEventListener('click',()=>{els.nickInput.value=localStorage.g
 els.settingsClose.addEventListener('click',()=>hideModal(els.settings));
 els.nickInput.addEventListener('change',()=>localStorage.setItem('bl_nick',els.nickInput.value.trim()));
 els.adminToggle.addEventListener('change',()=>setAdmin(els.adminToggle.checked));
-$('viewRules').addEventListener('click',()=>{openOverlay("Game Rules","<ul><li>Land tricks to score points.</li><li>3 attempts per trick with diminishing multipliers.</li><li>Five letters = SKATE → session ends.</li></ul>")});
-$('clearCache').addEventListener('click',async()=>{if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)))} if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()))} location.reload()});
+document.getElementById('viewRules').addEventListener('click',()=>{openOverlay("Game Rules","<ul><li>Land tricks to score points.</li><li>3 attempts per trick with diminishing multipliers.</li><li>Five letters = SKATE → session ends.</li></ul>")});
+document.getElementById('clearCache').addEventListener('click',()=>location.reload());
 
 els.editLevel.addEventListener('click',()=>{
   let html='<div class="list">'; for(let i=1;i<=10;i++){html+=`<button class="list-item" data-l="${i}">${i} • ${LEVEL_DESC[i]}</button>`} html+='</div>';
@@ -326,103 +295,180 @@ function renderHighScores(){
   openOverlay("High Scores",html);
   if(isAdmin()){els.modalBody.querySelectorAll('[data-del]').forEach(btn=>{btn.onclick=()=>{if(!confirm("Remove this score?"))return;const id=btn.dataset.del;const next=getScores().filter(x=>x.id!==id);setScores(next);renderHighScores();renderSummaries();};})}
 }
-$('openHigh').addEventListener('click',renderHighScores);
-$('openHigh2').addEventListener('click',renderHighScores);
+document.getElementById('openHigh').addEventListener('click',renderHighScores);
+document.getElementById('openHigh2').addEventListener('click',renderHighScores);
 
-/* Trick + Scoring */
+/* === Tuned scoring & selector === */
 const RULES={GRIND_OK:new Set(["rail","handrail","flatbar","ledge","hubba"]),SLIDE_OK:new Set(["ledge","hubba","rail","handrail","flatbar","curb","box"]),
-MANUAL_OK:new Set(["manual pad","box","funbox","kicker","bank"]),AIR_OK:new Set(["flat","gap","kicker","quarterpipe","bank","stair","funbox"]),
-DIRECTION_DEFAULTS:{"50-50":"frontside","5-0":"frontside","boardslide":"backside","noseslide":"backside","lipslide":"frontside","tailslide":"frontside","bluntslide":"backside","nosegrind":"frontside","crooked":"backside","smith":"backside","feeble":"backside","noseblunt":"frontside"}};
-const BASE={stance:{regular:0,switch:0.3,nollie:0.2,fakie:0.1},spin:{180:0.2,360:0.4,540:0.6,720:0.8},
-flip:{"kickflip":0.3,"heelflip":0.35,"varial kickflip":0.45,"hardflip":0.55,"tre flip":0.8,"360 flip":0.8,"laser flip":0.85,"inward heelflip":0.6,"bigspin flip":0.6},
-grind:{"50-50":0.3,"5-0":0.4,"boardslide":0.4,"noseslide":0.45,"tailslide":0.5,"lipslide":0.55,"smith":0.65,"feeble":0.65,"crooked":0.65,"nosegrind":0.7,"noseblunt":0.9,"bluntslide":0.85},
-manual:{"manual":0.25},obstacle:{"flat":0,"manual pad":0.1,"box":0.1,"curb":0.15,"ledge":0.25,"hubba":0.35,"flatbar":0.35,"rail":0.45,"handrail":0.55,"gap":0.5,"kicker":0.1,"stair":0.45,"quarterpipe":0.4,"bank":0.25,"funbox":0.2}};
-const BONUS={flip_into_grind:0.25,spin_plus_flip:0.2,spin_into_grind:0.15,manual_combo:0.1}; const ATTEMPT={1:1,2:0.85,3:0.75};
+MANUAL_OK:new Set(["manual pad","box","funbox","kicker","bank"]),AIR_OK:new Set(["flat","gap","kicker","quarterpipe","bank","stair","funbox"])};
 
-let current=null,attempt=1,misses=0,total=0;
+const SCORING={
+  baseFlip: {"kickflip":200,"heelflip":220,"varial kickflip":280,"hardflip":340,"tre flip":360,"360 flip":360,"laser flip":380,"inward heelflip":320,"bigspin flip":320,"impossible":380,"double kickflip":420,"double heelflip":430},
+  baseGrind: {"50-50":220,"5-0":260,"boardslide":230,"noseslide":240,"tailslide":270,"lipslide":300,"smith":340,"feeble":360,"crooked":340,"overcrook":380,"nosegrind":360,"noseblunt":460,"bluntslide":420},
+  baseManual: {"manual":200},
+  stanceMult: { regular:1.00, fakie:1.20, nollie:1.25, switch:1.25 },
+  spinMult: { 0:1.00, 180:1.10, 360:1.30 },
+  obstacleMult: { "flat":1.00,"manual pad":1.05,"box":1.10,"curb":1.10,"ledge":1.20,"hubba":1.30,"flatbar":1.30,"rail":1.40,"handrail":1.70,"gap":1.50,"kicker":1.10,"stair":1.50,"quarterpipe":1.20,"bank":1.10,"funbox":1.10 },
+  dirMult: {
+    "smith":      { frontside:1.06, backside:1.12 },
+    "feeble":     { frontside:1.12, backside:1.00 },
+    "crooked":    { frontside:1.12, backside:1.06 },
+    "overcrook":  { frontside:1.15, backside:1.22 },
+    "boardslide": { frontside:1.00, backside:1.05 },
+    "lipslide":   { frontside:1.10, backside:1.15 },
+    "noseslide":  { frontside:1.00, backside:1.05 },
+    "tailslide":  { frontside:1.05, backside:1.10 },
+    "noseblunt":  { frontside:1.25, backside:1.20 },
+    "bluntslide": { frontside:1.20, backside:1.15 },
+    "50-50":      { frontside:1.00, backside:1.00 },
+    "5-0":        { frontside:1.05, backside:1.05 },
+    "nosegrind":  { frontside:1.10, backside:1.10 }
+  },
+  combo: { flipInToGrind:1.25, spinPlusFlip:1.30, spinIntoGrind:1.15, manualCombo:1.10 },
+  attempt: { 1:1.00, 2:0.85, 3:0.75 },
+  flowPerLand: 0.03, flowCap: 1.15
+};
+
+let STREAK=0;
+let recentSignatures={};
+
 function stancePool(){return Object.keys(STATE.stances).filter(k=>STATE.stances[k])}
-function allowedSpins(){return Object.keys(STATE.spins).filter(k=>STATE.spins[k]).map(Number)}
+function allowedSpins(){return Object.keys(STATE.spins).filter(k=>STATE.spins[k]).map(Number).filter(n=>n<=360)}
 function allowedFlips(){return Object.keys(STATE.flips).filter(k=>STATE.flips[k])}
 function allowedGrinds(){return Object.keys(STATE.grinds).filter(k=>STATE.grinds[k])}
 function pickObstacle(){const src=(STATE.obstacles&&STATE.obstacles.length?STATE.obstacles:["flat"]);return src[Math.floor(Math.random()*src.length)]}
-function isRail(o){return ["rail","handrail","flatbar"].includes(o)}
+
+function setNextVisible(on){
+  els.nextBtn.classList.toggle('hidden',!on);
+  [els.skipBtn,els.missBtn,els.landBtn].forEach(b=>b.classList.toggle('hidden',on));
+}
 
 function generateTrick(){
-  const ob=pickObstacle(); const parts={obstacle:ob};
+  const ob=pickObstacle();
   const pools={stance:stancePool(),spins:allowedSpins(),flips:allowedFlips(),grinds:allowedGrinds()};
-  const canGrind=(STATE.categories.grinds&&(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))&&pools.grinds.length;
-  const canManual=(STATE.categories.manuals&&RULES.MANUAL_OK.has(ob));
-  const canAir=(STATE.categories.airs&&(RULES.AIR_OK.has(ob)||isRail(ob)));
-  const canFlip=(STATE.categories.flips&&pools.flips.length);
-  const patterns=[]; if(canGrind)patterns.push("flipToGrind","grindOnly"); if(canManual)patterns.push("manualOnly"); if(canAir&&canFlip)patterns.push("flipOnly"); if(!patterns.length&&canFlip)patterns.push("flipOnly"); if(!patterns.length)patterns.push("manualOnly");
+  const legal = { 
+    grind:(STATE.categories.grinds&&(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))&&pools.grinds.length,
+    manual:(STATE.categories.manuals&&RULES.MANUAL_OK.has(ob)),
+    air:(STATE.categories.airs&&(RULES.AIR_OK.has(ob))),
+    flip:(STATE.categories.flips&&pools.flips.length),
+    spin:(STATE.categories.spins&&pools.spins.length)
+  };
+  if(ob==="handrail") legal.manual=false;
+
+  const patterns=[];
+  if(legal.grind) patterns.push("grindOnly");
+  if(legal.flip && (legal.air || ob==="rail"||ob==="handrail"||ob==="flatbar")) patterns.push("flipOnly");
+  if(legal.flip && legal.grind) patterns.push("flipToGrind");
+  if(legal.manual) patterns.push("manualOnly");
+  if(!patterns.length) patterns.push(legal.flip?"flipOnly":"manualOnly");
+
   const pat=patterns[Math.floor(Math.random()*patterns.length)];
-  if(Math.random()<0.25){const pool=pools.stance;if(pool.length){const st=pool[Math.floor(Math.random()*pool.length)];if(st!=="regular")parts.stance=st;}}
-  if(STATE.categories.spins&&pools.spins.length&&Math.random()<0.2){parts.spin=pools.spins[Math.floor(Math.random()*pools.spins.length)]}
-  if(pat==="flipOnly"){parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]}
-  else if(pat==="grindOnly"){const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)];parts.grind=g;parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside"}
-  else if(pat==="flipToGrind"){const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)];parts.grind=g;parts.direction=RULES.DIRECTION_DEFAULTS[g]||"frontside";parts.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]}
-  else if(pat==="manualOnly"){parts.manual="manual"}
-  if(parts.grind){const slide=["boardslide","noseslide","tailslide","lipslide","bluntslide"].includes(parts.grind); if(slide&&!RULES.SLIDE_OK.has(ob))parts.grind=null; if(!slide&&!(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob)))parts.grind=null}
-  if(parts.flip&&!parts.grind&&!parts.manual){if(!(RULES.AIR_OK.has(ob)||isRail(ob)))parts.flip=null}
-  if(!parts.flip&&!parts.grind&&!parts.manual){parts.flip="kickflip";parts.obstacle=RULES.AIR_OK.has(ob)?ob:"flat"}
-  return parts;
+  const c={obstacle:ob};
+  if(Math.random()<0.25 && pools.stance.length){const st=pools.stance[Math.floor(Math.random()*pools.stance.length)]; if(st!=="regular") c.stance=st;}
+  const lvl=STATE.level||6; const spinChance = (lvl<=3?0.08:(lvl<=6?0.28:0.5));
+  if(legal.spin && Math.random()<spinChance) c.spin=pools.spins[Math.floor(Math.random()*pools.spins.length)];
+
+  if(pat==="flipOnly"){ c.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]; }
+  else if(pat==="grindOnly"){ const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)]; c.grind=g; c.direction=(SCORING.dirMult[g]&&Math.random()<0.5)?"frontside":"backside"; }
+  else if(pat==="flipToGrind"){ const g=pools.grinds[Math.floor(Math.random()*pools.grinds.length)]; c.grind=g; c.direction=(SCORING.dirMult[g]&&Math.random()<0.5)?"frontside":"backside"; c.flip=pools.flips[Math.floor(Math.random()*pools.flips.length)]; }
+  else if(pat==="manualOnly"){ c.manual="manual"; }
+
+  if(c.grind){
+    const slide=["boardslide","noseslide","tailslide","lipslide","bluntslide","noseblunt"].includes(c.grind);
+    if(slide&&!RULES.SLIDE_OK.has(ob)) c.grind=null;
+    if(!slide&&!(RULES.GRIND_OK.has(ob)||RULES.SLIDE_OK.has(ob))) c.grind=null;
+  }
+  if(c.flip && !c.grind && !RULES.AIR_OK.has(ob) && !["rail","handrail","flatbar"].includes(ob)) c.flip=null;
+  if(!c.flip && !c.grind && !c.manual){ c.flip="kickflip"; c.obstacle="flat"; }
+  return c;
 }
+
 function describe(c){
-  const isRailObs=["rail","handrail","flatbar"].includes(c.obstacle); const parts=[];
+  const isRailObs=["rail","handrail","flatbar"].includes(c.obstacle);
+  const parts=[];
   if(c.flip&&!c.grind&&!c.manual&&isRailObs){parts.push(c.flip,"over",c.obstacle);return parts.join(" ")}
   if(c.stance)parts.push(c.stance); if(c.spin)parts.push(String(c.spin)); if(c.flip)parts.push(c.flip);
   if(c.direction&&c.grind)parts.push(`${c.direction} ${c.grind}`); else if(c.grind)parts.push(c.grind);
   if(c.manual)parts.push(c.manual); if(c.obstacle)parts.push(`on ${c.obstacle}`); return parts.join(" ");
 }
 
-function computeScore(c,att){
-  let s=1.0,bd=[]; const st=c.stance||"regular"; s+=BASE.stance[st]||0; bd.push(["stance",st,BASE.stance[st]||0]);
-  if(c.spin){s+=BASE.spin[c.spin]||0; bd.push(["spin",c.spin,BASE.spin[c.spin]||0])}
-  if(c.flip){s+=BASE.flip[c.flip]||0; bd.push(["flip",c.flip,BASE.flip[c.flip]||0])}
-  if(c.grind){s+=BASE.grind[c.grind]||0; bd.push(["grind",c.grind,BASE.grind[c.grind]||0])}
-  if(c.manual){s+=BASE.manual[c.manual]||0; bd.push(["manual",c.manual,BASE.manual[c.manual]||0])}
-  if(c.obstacle){s+=BASE.obstacle[c.obstacle]||0; bd.push(["obstacle",c.obstacle,BASE.obstacle[c.obstacle]||0])}
-  let bonus=0; if(c.flip&&c.grind)bonus+=BONUS.flip_into_grind; if(c.flip&&c.spin)bonus+=BONUS.spin_plus_flip; if(c.spin&&c.grind)bonus+=BONUS.spin_into_grind; if(c.manual&&(c.flip||c.spin))bonus+=BONUS.manual_combo;
-  const base=Math.max(0.1,s)*(1+bonus); const mult=ATTEMPT[att]||1; return {final:+(base*mult).toFixed(2),breakdown:bd,bonus,mult,base:+base.toFixed(2)};
+function trickSignature(c){
+  return [c.stance||"regular",c.spin||0,c.flip||"",c.grind||c.manual||"",c.direction||"",c.obstacle||""].join("|");
 }
 
+function computeScore(c,att){
+  let basePts=0; let breakdown=[];
+  const stance=c.stance||"regular"; const obstacle=c.obstacle||"flat"; const spinVal=c.spin?Number(c.spin):0;
+
+  if(c.flip){ const pts=SCORING.baseFlip[c.flip]||200; basePts+=pts; breakdown.push(["flip",c.flip,pts]); }
+  if(c.grind){ const pts=SCORING.baseGrind[c.grind]||240; basePts+=pts; breakdown.push(["grind",c.grind,pts]);
+    if(c.direction){ const dm=SCORING.dirMult[c.grind]; if(dm && dm[c.direction]){ basePts*=dm[c.direction]; breakdown.push(["direction",c.direction,"×"+dm[c.direction]]); } }
+  }
+  if(c.manual){ const pts=SCORING.baseManual[c.manual]||180; basePts+=pts; breakdown.push(["manual",c.manual,pts]); }
+
+  const obstM=SCORING.obstacleMult[obstacle]||1.0; basePts*=obstM; breakdown.push(["obstacle",obstacle,"×"+obstM]);
+  const stM=SCORING.stanceMult[stance]||1.0; basePts*=stM; breakdown.push(["stance",stance,"×"+stM]);
+  const spM=SCORING.spinMult[spinVal]||1.0; if(spM!==1.0){basePts*=spM; breakdown.push(["spin",String(spinVal),"×"+spM]);}
+
+  let combo=1.0; if(c.flip&&c.grind)combo*=SCORING.combo.flipInToGrind; if(c.flip&&c.spin)combo*=SCORING.combo.spinPlusFlip; if(c.spin&&c.grind)combo*=SCORING.combo.spinIntoGrind; if(c.manual&&(c.flip||c.spin))combo*=SCORING.combo.manualCombo;
+  if(combo!==1.0) breakdown.push(["combo","—","×"+combo]); basePts*=combo;
+
+  const attM=SCORING.attempt[att]||1.0; basePts*=attM; breakdown.push(["attempt","x"+att,"×"+attM]);
+
+  const flowM=Math.min(1+STREAK*SCORING.flowPerLand,SCORING.flowCap); if(flowM!==1.0){ basePts*=flowM; breakdown.push(["flow",STREAK+" streak","×"+flowM.toFixed(2)]); }
+
+  const sig=trickSignature(c); const count=(recentSignatures[sig]||0);
+  if(count>=2){ const repM=Math.max(0.1, 1 - 0.10*(count-1)); basePts*=repM; breakdown.push(["repeat","#"+(count+1),"×"+repM.toFixed(2)]); }
+
+  const final=Math.max(1,Math.round(basePts));
+  return {final,breakdown,base:final};
+}
+
+/* Session wiring */
+let current=null,attempt=1,misses=0,total=0;
 function setView(v){
-  els.viewSetup.classList.toggle('hidden',v!=="setup"); els.viewSetup.classList.toggle('active',v==="setup");
-  els.viewGame.classList.toggle('hidden',v!=="game"); els.viewGame.classList.toggle('active',v==="game");
-  els.viewOver.classList.toggle('hidden',v!=="over"); els.viewOver.classList.toggle('active',v==="over");
-  if(v==="setup"){els.scoreLine.innerHTML='High Score: <button id="openHigh" class="link small">'+bestScore()+' pts</button>'; $('openHigh').onclick=renderHighScores}
+  els.viewSetup.classList.toggle('hidden',v!=="setup"); els.viewGame.classList.toggle('hidden',v!=="game"); els.viewOver.classList.toggle('hidden',v!=="over");
+  if(v==="setup"){els.scoreLine.innerHTML='High Score: <button id="openHigh" class="link small">'+bestScore()+' pts</button>'; document.getElementById('openHigh').onclick=renderHighScores}
   if(v==="game"){els.scoreLine.textContent='Total Score: '+total+' pts'}
 }
 function updateLetters(){[...els.letters.children].forEach((s,i)=>s.classList.toggle('lost',i<misses))}
-function startSession(){misses=0;total=0;attempt=1;updateLetters();setView("game");nextTrick(true)}
+function startSession(){misses=0;total=0;attempt=1;STREAK=0;recentSignatures={};updateLetters();setView("game");nextTrick()}
 els.startBtn.addEventListener('click',startSession);
 
-function nextTrick(){attempt=1;current=generateTrick();els.trickText.textContent=describe(current)||"kickflip on flat";updateAttemptUI();setNextVisible(false);els.skipBtn.disabled=false;els.missBtn.disabled=false;els.landBtn.disabled=false;els.scoreLine.textContent='Total Score: '+total+' pts'}
-function updateAttemptUI(){els.attemptBadge.textContent=`Attempt ${attempt}/3`;const rep=computeScore(current,attempt);els.openAttempt.textContent=`This attempt: ${rep.final} pts`}
-els.openAttempt.addEventListener('click',()=>{const rep=computeScore(current,attempt);let lines=`Base: ${rep.base} \nCombo x${(1+rep.bonus).toFixed(2)} \nAttempt x${rep.mult} => Final: ${rep.final} pts \n\nBreakdown:\n`;for(const [k,n,p] of rep.breakdown){lines+=` + ${k}: ${n} = ${p}\n`} openOverlay("Attempt Score Breakdown",`<pre>${lines}</pre>`)});
+function nextTrick(){
+  attempt=1; current=generateTrick();
+  els.trickText.textContent=describe(current)||"kickflip on flat";
+  updateAttemptUI(); setNextVisible(false);
+  els.skipBtn.disabled=false; els.missBtn.disabled=false; els.landBtn.disabled=false;
+  els.scoreLine.textContent='Total Score: '+total+' pts';
+}
+function updateAttemptUI(){const rep=computeScore(current,attempt);els.attemptBadge.textContent=`Attempt ${attempt}/3`;els.openAttempt.textContent=`This attempt: ${rep.final} pts`}
+els.openAttempt.addEventListener('click',()=>{const rep=computeScore(current,attempt);let lines=`Breakdown:\n`;for(const [k,n,p] of rep.breakdown){lines+=` + ${k}: ${n} = ${p}\n`} openOverlay("Attempt Score Breakdown",`<pre>${lines}</pre>`)});
 
 function settle(hit){
-  if(hit){const rep=computeScore(current,attempt);total=+(total+rep.final).toFixed(2);els.scoreLine.textContent='Total Score: '+total+' pts';setNextVisible(true);els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}
-  else{if(attempt<3){attempt++;updateAttemptUI()}else{misses++;updateLetters();if(misses>=5){endSession();return}setNextVisible(true);els.skipBtn.disabled=true;els.missBtn.disabled=true;els.landBtn.disabled=true}}
+  if(hit){ STREAK++; const rep=computeScore(current,attempt); total=+(total+rep.final).toFixed(2);
+    const sig=trickSignature(current); recentSignatures[sig]=(recentSignatures[sig]||0)+1;
+    els.scoreLine.textContent='Total Score: '+total+' pts'; setNextVisible(true);
+    els.skipBtn.disabled=true; els.missBtn.disabled=true; els.landBtn.disabled=true;
+  } else {
+    if(attempt<3){attempt++; updateAttemptUI();}
+    else{ STREAK=0; misses++; updateLetters(); if(misses>=5){endSession(); return} setNextVisible(true); els.skipBtn.disabled=true; els.missBtn.disabled=true; els.landBtn.disabled=true; }
+  }
 }
 els.landBtn.addEventListener('click',()=>settle(true));
 els.missBtn.addEventListener('click',()=>settle(false));
-els.skipBtn.addEventListener('click',()=>{els.nextBtn.classList.add('hidden');nextTrick()});
+els.skipBtn.addEventListener('click',()=>{ setNextVisible(false); nextTrick(); });
 els.nextBtn.addEventListener('click',()=>nextTrick());
 
-function endSession(){ $('finalScore').textContent=total+' pts'; const arr=getScores(); const nick=(localStorage.getItem('bl_nick')||"").trim(); arr.push({id:String(Date.now()),value:total,nickname:nick,created_at:Date.now()}); setScores(arr.sort((a,b)=>b.value-a.value).slice(0,100)); renderSummaries(); setView("over")}
+function endSession(){ document.getElementById('finalScore').textContent=total+' pts'; const arr=getScores(); const nick=(localStorage.getItem('bl_nick')||"").trim(); arr.push({id:String(Date.now()),value:total,nickname:nick,created_at:Date.now()}); setScores(arr.sort((a,b)=>b.value-a.value).slice(0,100)); renderSummaries(); setView("over")}
 els.endBtn.addEventListener('click',()=>{ if(total<=0){setView("setup");return} showModal(els.confirm)});
 els.confirmNo.addEventListener('click',()=>hideModal(els.confirm));
 els.confirmYes.addEventListener('click',()=>{hideModal(els.confirm);endSession()});
 els.restartBtn.addEventListener('click',()=>setView("setup"));
 
+// Boot
 renderLevel();renderSummaries();setView("setup");updateLetters();
-;['overlay','confirm','settings'].forEach(id=>{const m=document.getElementById(id); if(m){m.classList.add('hidden'); m.setAttribute('aria-hidden','true');}});
-
-
-/* service worker disabled in inline build */
-console.log("Brainlock loaded",VERSION);
-
+['overlay','confirm','settings'].forEach(id=>{const m=document.getElementById(id); if(m){m.classList.add('hidden'); m.setAttribute('aria-hidden','true');}});
 </script>
 </body>
 </html>
